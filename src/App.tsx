@@ -1,5 +1,4 @@
 import './App.css'
-import { useState } from 'react'
 import Dashboard from './pages/Dashboard'
 import Products from './pages/Products'
 import Providers from './pages/Providers'
@@ -16,9 +15,9 @@ function AppContent() {
       case 'providers':
         return <Providers />
       case 'generate-order':
-        return <GenerateOrderPage />
+        return <GenerateOrderPage onNavigate={() => {}} />
       default:
-        return <Dashboard />
+        return <Dashboard onNavigate={() => {}} />
     }
   }
 

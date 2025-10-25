@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { db } from '../../firebase';
-import { collection, getDocs, addDoc, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, addDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Building2, Edit, Trash2, Phone, Mail, MapPin } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Search, Plus, Building2, Edit, Trash2, MapPin } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
