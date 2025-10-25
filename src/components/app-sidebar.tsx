@@ -16,6 +16,11 @@ import {
   IconSettings,
   IconTrack,
   IconUsers,
+  IconPackage,
+  IconTruck,
+  IconBuildingStore,
+  IconChartLine,
+  IconUserCheck,
 } from "@tabler/icons-react"
 
 import { NavDocuments } from "@/components/nav-documents"
@@ -45,7 +50,7 @@ const data = {
       icon: IconDashboard,
     },
     {
-      title: "Geneate order",
+      title: "Generate order",
       url: "#",
       icon: IconListDetails,
     },
@@ -73,31 +78,31 @@ const data = {
     {
       title: "Inventory Management",
       url: "#",
-      icon: IconUsers,
+      icon: IconPackage,
     },
     // proveedores
     {
       title: "Providers",
       url: "#",
-      icon: IconUsers,
+      icon: IconBuildingStore,
     },
     // ordenes de proveedores
     {
       title: "Supplier Orders",
       url: "#",
-      icon: IconUsers,
+      icon: IconTruck,
     },
     // empleados analytics
     {
       title: "Employee Analytics",
       url: "#",
-      icon: IconUsers,
+      icon: IconChartLine,
     },
     // marketing analytics
     {
       title: "Employee Management",
       url: "#",
-      icon: IconUsers,
+      icon: IconUserCheck,
     },
   ],
   navClouds: [
