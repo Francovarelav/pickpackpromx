@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "upload-data": "node scripts/upload-data-to-firebase.mjs"
+    "upload-data": "node scripts/upload-data-to-firebase.mjs",
+    "upload-warehouse": "node scripts/upload-warehouse-to-firebase.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
