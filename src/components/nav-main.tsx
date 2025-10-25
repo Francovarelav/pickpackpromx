@@ -1,6 +1,7 @@
 import { IconCirclePlusFilled, IconMail, type Icon } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
+import { useNavigation } from "@/contexts/NavigationContext"
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -18,6 +19,7 @@ export function NavMain({
     icon?: Icon
   }[]
 }) {
+  const { setCurrentPage } = useNavigation()
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
@@ -43,7 +45,14 @@ export function NavMain({
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton tooltip={item.title}>
+              <SidebarMenuButton 
+                tooltip={item.title}
+                onClick={() => {
+                  if (item.url !== '#') {
+                    setCurrentPage(item.url)
+                  }
+                }}
+              >
                 {item.icon && <item.icon />}
                 <span>{item.title}</span>
               </SidebarMenuButton>

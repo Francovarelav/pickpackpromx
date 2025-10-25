@@ -1,13 +1,35 @@
-import { useState } from 'react'
 import './App.css'
 import Dashboard from './pages/Dashboard'
-function App() {
-  const [count, setCount] = useState(0)
+import Products from './pages/Products'
+import Providers from './pages/Providers'
+import { NavigationProvider, useNavigation } from './contexts/NavigationContext'
+
+function AppContent() {
+  const { currentPage } = useNavigation()
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'products':
+        return <Products />
+      case 'providers':
+        return <Providers />
+      default:
+        return <Dashboard />
+    }
+  }
 
   return (
     <>
-      <Dashboard />
+      {renderPage()}
     </>
+  )
+}
+
+function App() {
+  return (
+    <NavigationProvider>
+      <AppContent />
+    </NavigationProvider>
   )
 }
 

@@ -28,6 +28,7 @@ import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
+// import { useNavigation } from "@/contexts/NavigationContext"
 import {
   Sidebar,
   SidebarContent,
@@ -47,7 +48,7 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "#",
+      url: "dashboard",
       icon: IconDashboard,
     },
     {
@@ -57,7 +58,7 @@ const data = {
     },
     {
       title: "Products",
-      url: "#",
+      url: "products",
       icon: IconChartBar,
     },
     {
@@ -84,7 +85,7 @@ const data = {
     // proveedores
     {
       title: "Providers",
-      url: "#",
+      url: "providers",
       icon: IconBuildingStore,
     },
     // ordenes de proveedores
