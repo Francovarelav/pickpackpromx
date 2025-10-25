@@ -17,13 +17,13 @@ function AppContent() {
       case 'providers':
         return <Providers />
       case 'generate-order':
-        return <GenerateOrderPage onNavigate={() => {}} />
+        return <GenerateOrderPage />
       case 'airlines':
         return <Airlines />
       case 'employees':
         return <Employees />
       default:
-        return <Dashboard onNavigate={() => {}} />
+        return <Dashboard />
     }
   }
 

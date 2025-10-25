@@ -17,11 +17,7 @@ interface UploadedFile {
   error?: string
 }
 
-interface GenerateOrderPageProps {
-  onNavigate: (page: 'dashboard' | 'generate-order') => void
-}
-
-export default function GenerateOrderPage({ onNavigate }: GenerateOrderPageProps) {
+export default function GenerateOrderPage() {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [isDragOver, setIsDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -145,7 +141,7 @@ export default function GenerateOrderPage({ onNavigate }: GenerateOrderPageProps
         } as React.CSSProperties
       }
     >
-      <AppSidebar variant="inset" onNavigate={onNavigate} />
+      <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">

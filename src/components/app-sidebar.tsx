@@ -17,6 +17,7 @@ import {
   IconUsers,
   IconPackage,
   IconTruck,
+  IconBuildingStore,
   IconChartLine,
   IconUserCheck,
   IconBottle,
@@ -51,13 +52,13 @@ const data = {
     },
     {
       title: "Generate order",
-      url: "#",
+      url: "generate-order",
       icon: IconListDetails,
     },
     {
       title: "Products",
       url: "products",
-      icon: IconChartBar,
+      icon: IconPackage,
     },
     {
       title: "Visual Map Creator",
@@ -208,157 +209,6 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const data = {
-    user: {
-      name: "shadcn",
-      email: "m@example.com",
-      avatar: "/avatars/shadcn.jpg",
-    },
-    navMain: [
-      {
-        title: "Dashboard",
-        url: "dashboard",
-        icon: IconDashboard,
-      },
-      {
-        title: "Products",
-        url: "products",
-        icon: IconPackage,
-      },
-      {
-        title: "Providers",
-        url: "providers",
-        icon: IconTruck,
-      },
-      {
-        title: "Generate order",
-        url: "generate-order",
-        icon: IconListDetails,
-      },
-      {
-        title: "Visual Map Creator",
-        url: "#",
-        icon: IconFolder,
-      },
-      {
-        title: "Indication Assistant",
-        url: "#",
-        icon: IconUsers,
-      },
-      {
-        title: "Order Tracking",
-        url: "#",
-        icon: IconTrack,
-      },
-      {
-        title: "Inventory Management",
-        url: "#",
-        icon: IconPackage,
-      },
-      {
-        title: "Supplier Orders",
-        url: "#",
-        icon: IconTruck,
-      },
-      {
-        title: "Employee Analytics",
-        url: "#",
-        icon: IconChartLine,
-      },
-      {
-        title: "Employee Management",
-        url: "#",
-        icon: IconUserCheck,
-      },
-      {
-        title: "Control Bottles Waste",
-        url: "#",
-        icon: IconBottle,
-      },
-    ],
-    navClouds: [
-      {
-        title: "Capture",
-        icon: IconCamera,
-        isActive: true,
-        url: "#",
-        items: [
-          {
-            title: "Active Proposals",
-            url: "#",
-          },
-          {
-            title: "Archived",
-            url: "#",
-          },
-        ],
-      },
-      {
-        title: "Proposal",
-        icon: IconFileDescription,
-        url: "#",
-        items: [
-          {
-            title: "Active Proposals",
-            url: "#",
-          },
-          {
-            title: "Archived",
-            url: "#",
-          },
-        ],
-      },
-      {
-        title: "Prompts",
-        icon: IconFileAi,
-        url: "#",
-        items: [
-          {
-            title: "Active Proposals",
-            url: "#",
-          },
-          {
-            title: "Archived",
-            url: "#",
-          },
-        ],
-      },
-    ],
-    navSecondary: [
-      {
-        title: "Settings",
-        url: "#",
-        icon: IconSettings,
-      },
-      {
-        title: "Get Help",
-        url: "#",
-        icon: IconHelp,
-      },
-      {
-        title: "Search",
-        url: "#",
-        icon: IconSearch,
-      },
-    ],
-    documents: [
-      {
-        name: "Data Library",
-        url: "#",
-        icon: IconDatabase,
-      },
-      {
-        name: "Reports",
-        url: "#",
-        icon: IconReport,
-      },
-      {
-        name: "Word Assistant",
-        url: "#",
-        icon: IconFileWord,
-      },
-    ],
-  }
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
