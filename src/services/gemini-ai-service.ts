@@ -52,7 +52,7 @@ function getMimeType(file: File): string {
  * Procesa un archivo PDF con Gemini Vision
  */
 async function processPDFFile(file: File): Promise<ExtractedOrderData> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   
   const base64Data = await fileToBase64(file);
   const mimeType = getMimeType(file);
@@ -119,7 +119,7 @@ async function processExcelFile(file: File): Promise<ExtractedOrderData> {
   }
   
   // Para archivos Excel, usamos Gemini con el archivo completo
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   
   const base64Data = await fileToBase64(file);
   const mimeType = getMimeType(file);
@@ -180,7 +180,7 @@ Responde SOLO con el JSON, sin texto adicional.
  * Procesa contenido de texto (CSV)
  */
 async function processTextContent(text: string, fileType: string): Promise<ExtractedOrderData> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   
   const prompt = `
 Analiza este contenido ${fileType} que contiene una orden de una aerolínea.
