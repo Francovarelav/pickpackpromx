@@ -8,17 +8,17 @@ import { getStorage } from "firebase/storage";
 // Your web app's Firebase configuration
 const firebaseConfig = {
   // @ts-ignore
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDqMK7AZaRQyr6DvQwxOxuNJ7wtMxpoex8",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   // @ts-ignore
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "pickpackpromx.firebaseapp.com",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   // @ts-ignore
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "pickpackpromx",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   // @ts-ignore
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "pickpackpromx.firebasestorage.app",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   // @ts-ignore
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "1072798208281",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   // @ts-ignore
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:1072798208281:web:b818b9db86bd881430f588"
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 // Initialize Firebase
