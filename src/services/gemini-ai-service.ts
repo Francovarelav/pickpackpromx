@@ -119,7 +119,7 @@ async function processExcelFile(file: File): Promise<ExtractedOrderData> {
   }
   
   // Para archivos Excel, usamos Gemini con el archivo completo
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
   
   const base64Data = await fileToBase64(file);
   const mimeType = getMimeType(file);
