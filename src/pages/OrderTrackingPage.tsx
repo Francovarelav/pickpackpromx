@@ -24,6 +24,7 @@ import { getAllOrders } from '@/services/order-processing-service'
 import type { Order } from '@/types/order-types'
 import { toast } from 'sonner'
 import { Toaster } from '@/components/ui/sonner'
+import { OrderDetailModal } from '@/components/order-detail-modal'
 
 interface OrderTrackingPageProps {
   onNavigate: (page: 'dashboard' | 'generate-order') => void
@@ -75,6 +76,8 @@ export default function OrderTrackingPage({ onNavigate }: OrderTrackingPageProps
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const loadOrders = async () => {
     try {
@@ -121,6 +124,16 @@ export default function OrderTrackingPage({ onNavigate }: OrderTrackingPageProps
         <IconComponent className="w-4 h-4" />
       </div>
     )
+  }
+
+  const handleOrderClick = (order: Order) => {
+    setSelectedOrder(order)
+    setIsModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setSelectedOrder(null)
   }
 
   return (
@@ -220,7 +233,7 @@ export default function OrderTrackingPage({ onNavigate }: OrderTrackingPageProps
                         const currentStatus = statusConfig[order.status as keyof typeof statusConfig]
                         
                         return (
-                          <Card key={order.id} className="hover:shadow-md transition-shadow">
+                          <Card key={order.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleOrderClick(order)}>
                             <CardContent className="pt-6">
                               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                 {/* Order Info */}
@@ -306,11 +319,23 @@ export default function OrderTrackingPage({ onNavigate }: OrderTrackingPageProps
                                   </div>
 
                                   <div className="flex gap-2">
-                                    <Button variant="outline" size="sm" className="flex-1">
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm" 
+                                      className="flex-1"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleOrderClick(order)
+                                      }}
+                                    >
                                       <IconEye className="w-4 h-4 mr-2" />
                                       Ver Detalles
                                     </Button>
-                                    <Button variant="outline" size="sm">
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
                                       <IconDownload className="w-4 h-4" />
                                     </Button>
                                   </div>
@@ -350,6 +375,13 @@ export default function OrderTrackingPage({ onNavigate }: OrderTrackingPageProps
           </div>
         </SidebarInset>
       </SidebarProvider>
+      
+      {/* Order Detail Modal */}
+      <OrderDetailModal
+        order={selectedOrder}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+      />
     </>
   )
 }
