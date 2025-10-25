@@ -16,6 +16,7 @@ export function NavMain({
     title: string
     url: string
     icon?: Icon
+    onClick?: () => void
   }[]
 }) {
   return (
@@ -43,9 +44,22 @@ export function NavMain({
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton tooltip={item.title}>
-                {item.icon && <item.icon />}
-                <span>{item.title}</span>
+              <SidebarMenuButton 
+                tooltip={item.title}
+                onClick={item.onClick}
+                asChild={!item.onClick}
+              >
+                {item.onClick ? (
+                  <>
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                  </>
+                ) : (
+                  <a href={item.url}>
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                  </a>
+                )}
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}

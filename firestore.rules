@@ -1,0 +1,40 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Reglas para colección de proveedores
+    match /suppliers/{document} {
+      allow read, write: if true; // Permitir lectura y escritura para todos
+    }
+    
+    // Reglas para colección de productos
+    match /products/{document} {
+      allow read, write: if true; // Permitir lectura y escritura para todos
+    }
+    
+    // Reglas para colección de órdenes
+    match /orders/{document} {
+      allow read, write: if true; // Permitir lectura y escritura para todos
+    }
+    
+    // Reglas para colección de inventario
+    match /inventory/{document} {
+      allow read, write: if true; // Permitir lectura y escritura para todos
+    }
+    
+    // Reglas para colección de empleados
+    match /employees/{document} {
+      allow read, write: if true; // Permitir lectura y escritura para todos
+    }
+    
+    // Reglas para colección de usuarios
+    match /users/{document} {
+      allow read, write: if true; // Permitir lectura y escritura para todos
+    }
+    
+    // Regla por defecto - permitir todo (para desarrollo)
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

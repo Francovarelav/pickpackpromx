@@ -10,7 +10,11 @@ import {
 
 import data from "./data.json"
 
-export default function Page() {
+interface DashboardProps {
+  onNavigate: (page: 'dashboard' | 'generate-order') => void
+}
+
+export default function Page({ onNavigate }: DashboardProps) {
   return (
     <SidebarProvider
       style={
@@ -20,7 +24,7 @@ export default function Page() {
         } as React.CSSProperties
       }
     >
-      <AppSidebar variant="inset" />
+      <AppSidebar variant="inset" onNavigate={onNavigate} />
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">
