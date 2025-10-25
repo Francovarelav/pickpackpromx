@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/sidebar"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
-  onNavigate?: (page: 'dashboard' | 'generate-order') => void
+  onNavigate?: (page: 'dashboard' | 'generate-order' | 'order-tracking') => void
 }
 
 export function AppSidebar({ onNavigate, ...props }: AppSidebarProps) {
@@ -80,6 +80,7 @@ export function AppSidebar({ onNavigate, ...props }: AppSidebarProps) {
         title: "Order Tracking",
         url: "#",
         icon: IconTrack,
+        onClick: () => onNavigate?.('order-tracking'),
       },
       //inventory management
       {
