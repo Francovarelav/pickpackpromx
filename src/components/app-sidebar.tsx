@@ -21,6 +21,7 @@ import {
   IconBuildingStore,
   IconChartLine,
   IconUserCheck,
+  IconBottle,
 } from "@tabler/icons-react"
 
 import { NavDocuments } from "@/components/nav-documents"
@@ -103,6 +104,12 @@ const data = {
       title: "Employee Management",
       url: "#",
       icon: IconUserCheck,
+    },
+    // control botellas
+    {
+      title: "Control Bottles Waste",
+      url: "#",
+      icon: IconBottle,
     },
   ],
   navClouds: [
