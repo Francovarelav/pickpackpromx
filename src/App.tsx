@@ -3,6 +3,8 @@ import Dashboard from './pages/Dashboard'
 import Products from './pages/Products'
 import Providers from './pages/Providers'
 import GenerateOrderPage from './pages/GenerateOrderPage'
+import Airlines from './pages/Airlines'
+import Employees from './pages/Employees'
 import { NavigationProvider, useNavigation } from './contexts/NavigationContext'
 
 function AppContent() {
@@ -16,6 +18,10 @@ function AppContent() {
         return <Providers />
       case 'generate-order':
         return <GenerateOrderPage onNavigate={() => {}} />
+      case 'airlines':
+        return <Airlines />
+      case 'employees':
+        return <Employees />
       default:
         return <Dashboard onNavigate={() => {}} />
     }

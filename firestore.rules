@@ -32,6 +32,16 @@ service cloud.firestore {
       allow read, write: if true; // Permitir lectura y escritura para todos
     }
     
+    // Reglas para colección de aerolíneas
+    match /airlines/{document} {
+      allow read, write: if true; // Permitir lectura y escritura para todos
+    }
+    
+    // Reglas para colección de empleados
+    match /employees/{document} {
+      allow read, write: if true; // Permitir lectura y escritura para todos
+    }
+    
     // Regla por defecto - permitir todo (para desarrollo)
     match /{document=**} {
       allow read, write: if true;
