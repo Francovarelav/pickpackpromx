@@ -22,6 +22,7 @@ import {
   IconChartLine,
   IconUserCheck,
   IconBottle,
+  IconPlane,
 } from "@tabler/icons-react"
 
 import { NavDocuments } from "@/components/nav-documents"
@@ -87,6 +88,18 @@ const data = {
       title: "Providers",
       url: "providers",
       icon: IconBuildingStore,
+    },
+    // aerolineas
+    {
+      title: "Airlines",
+      url: "airlines",
+      icon: IconPlane,
+    },
+    // empleados
+    {
+      title: "Employees",
+      url: "employees",
+      icon: IconUsers,
     },
     // ordenes de proveedores
     {

@@ -1,0 +1,33 @@
+rules_version = '2';
+
+// Craft rules based on data in your Firestore database
+// allow write: if firestore.get(
+//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Reglas para logos de aerolíneas
+    match /airlines/{allPaths=**} {
+      allow read, write: if true; // Permitir lectura y escritura para todos
+    }
+    
+    // Reglas para imágenes de productos
+    match /products/{allPaths=**} {
+      allow read, write: if true; // Permitir lectura y escritura para todos
+    }
+    
+    // Reglas para imágenes de proveedores
+    match /suppliers/{allPaths=**} {
+      allow read, write: if true; // Permitir lectura y escritura para todos
+    }
+    
+    // Reglas para fotos de empleados
+    match /employees/{allPaths=**} {
+      allow read, write: if true; // Permitir lectura y escritura para todos
+    }
+    
+    // Regla por defecto - permitir todo (para desarrollo)
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}
