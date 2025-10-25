@@ -72,7 +72,7 @@ const data = {
     },
     {
       title: "Order Tracking",
-      url: "#",
+      url: "order-tracking",
       icon: IconTrack,
     },
     //inventory management
