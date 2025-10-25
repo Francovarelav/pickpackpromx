@@ -67,7 +67,6 @@ export function AppSidebar({ onNavigate, ...props }: AppSidebarProps) {
         title: "Generate order",
         url: "generate-order",
         icon: IconListDetails,
-        onClick: () => onNavigate?.('generate-order'),
       },
       {
         title: "Visual Map Creator",
