@@ -24,10 +24,9 @@ import { getAllOrders } from '@/services/order-processing-service'
 import type { Order } from '@/types/order-types'
 import { toast } from 'sonner'
 import { Toaster } from '@/components/ui/sonner'
-import { OrderDetailModal } from '@/components/order-detail-modal'
 
 interface OrderTrackingPageProps {
-  onNavigate: (page: 'dashboard' | 'generate-order') => void
+  onNavigate: (page: 'dashboard' | 'generate-order' | 'order-detail', order?: Order) => void
 }
 
 const statusConfig = {
@@ -76,8 +75,6 @@ export default function OrderTrackingPage({ onNavigate }: OrderTrackingPageProps
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const loadOrders = async () => {
     try {
@@ -127,13 +124,7 @@ export default function OrderTrackingPage({ onNavigate }: OrderTrackingPageProps
   }
 
   const handleOrderClick = (order: Order) => {
-    setSelectedOrder(order)
-    setIsModalOpen(true)
-  }
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false)
-    setSelectedOrder(null)
+    onNavigate('order-detail', order)
   }
 
   return (
@@ -375,13 +366,6 @@ export default function OrderTrackingPage({ onNavigate }: OrderTrackingPageProps
           </div>
         </SidebarInset>
       </SidebarProvider>
-      
-      {/* Order Detail Modal */}
-      <OrderDetailModal
-        order={selectedOrder}
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-      />
     </>
   )
 }

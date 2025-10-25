@@ -24,7 +24,7 @@ interface UploadedFile {
 }
 
 interface GenerateOrderPageProps {
-  onNavigate: (page: 'dashboard' | 'generate-order' | 'order-tracking') => void
+  onNavigate: (page: 'dashboard' | 'generate-order' | 'order-tracking' | 'order-detail', order?: any) => void
 }
 
 export default function GenerateOrderPage({ onNavigate }: GenerateOrderPageProps) {
