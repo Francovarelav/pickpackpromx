@@ -17,6 +17,7 @@ export function NavMain({
     title: string
     url: string
     icon?: Icon
+    onClick?: () => void
   }[]
 }) {
   const { setCurrentPage } = useNavigation()
@@ -48,13 +49,25 @@ export function NavMain({
               <SidebarMenuButton 
                 tooltip={item.title}
                 onClick={() => {
-                  if (item.url !== '#') {
+                  if (item.onClick) {
+                    item.onClick()
+                  } else if (item.url !== '#') {
                     setCurrentPage(item.url)
                   }
                 }}
+                asChild={!item.onClick && item.url === '#'}
               >
-                {item.icon && <item.icon />}
-                <span>{item.title}</span>
+                {item.onClick || item.url !== '#' ? (
+                  <>
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                  </>
+                ) : (
+                  <a href={item.url}>
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                  </a>
+                )}
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
