@@ -314,30 +314,50 @@ ${JSON.stringify(productList, null, 2)}
   const updateMissingProducts = async (detectedProducts: any[]) => {
     try {
       console.log('🔄 Actualizando productos missing en Firebase...');
+      console.log('📦 Productos detectados por Gemini:', detectedProducts);
       
       if (!cart) return;
       
-      // Crear lista de productos faltantes basada en los detectados
-      const missingProductNames = detectedProducts.map(product => {
-        const cartProduct = cart.productos.find(p => p.product_id === product.product_id);
-        return cartProduct ? `${cartProduct.producto} (${cartProduct.marca}) - ${product.quantity_mentioned} unidades` : '';
-      }).filter(name => name !== '');
+      // Crear un mapa de productos detectados para facilitar la búsqueda
+      const detectedMap = new Map();
+      detectedProducts.forEach(product => {
+        detectedMap.set(product.product_id, product.quantity_mentioned);
+      });
+      
+      console.log('🗺️ Mapa de productos detectados:', detectedMap);
+      
+      // Calcular productos missing: productos del cart - productos detectados
+      const missingProducts: string[] = [];
+      
+      cart.productos.forEach(cartProduct => {
+        const detectedQuantity = detectedMap.get(cartProduct.product_id) || 0;
+        const missingQuantity = cartProduct.cantidad_default - detectedQuantity;
+        
+        console.log(`📊 ${cartProduct.producto}: default=${cartProduct.cantidad_default}, detected=${detectedQuantity}, missing=${missingQuantity}`);
+        
+        // Si hay cantidad faltante, agregar a missing
+        if (missingQuantity > 0) {
+          missingProducts.push(`${cartProduct.producto} (${cartProduct.marca}) - Faltan ${missingQuantity} unidades`);
+        }
+      });
+      
+      console.log('❌ Productos missing calculados:', missingProducts);
       
       // Actualizar el cart en Firebase
       const cartRef = doc(db, 'carts', cart.id);
       await updateDoc(cartRef, {
-        missing: missingProductNames,
+        missing: missingProducts,
         updated_at: new Date()
       });
       
       // Actualizar el estado local
       setCart(prev => prev ? {
         ...prev,
-        missing: missingProductNames,
+        missing: missingProducts,
         updated_at: new Date()
       } : null);
       
-      console.log('✅ Productos missing actualizados:', missingProductNames);
+      console.log('✅ Productos missing actualizados en Firebase:', missingProducts);
       
     } catch (error) {
       console.error('❌ Error actualizando missing products:', error);
