@@ -10,7 +10,8 @@ import {
   Navigation,
   CheckCircle,
   Loader2,
-  Plane
+  Plane,
+  RotateCcw
 } from 'lucide-react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SiteHeader } from '@/components/site-header';
@@ -33,6 +34,7 @@ interface Cart {
   nombre: string;
   descripcion: string;
   missing: MissingProduct[];
+  status?: string;
 }
 
 interface ShelfProduct {
@@ -86,7 +88,8 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
             id: cartSnap.id,
             nombre: data.nombre || 'Cart Sin Nombre',
             descripcion: data.descripcion || '',
-            missing: data.missing || []
+            missing: data.missing || [],
+            status: data.status || 'limpieza'
           };
           
           setCart(cartData);
@@ -141,7 +144,7 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
         const maxCol = Math.max(...FIREBASE_DATA.map(item => item.coordenada_x), 0);
         const newGridSize = {
           rows: Math.max(maxRow + 3, 6),
-          cols: Math.max(maxCol + 3, 14)
+          cols: Math.max(maxCol + 3, 8)
         };
         setGridSize(newGridSize);
 
@@ -443,17 +446,19 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
 
       console.log('✈️ Enviando cart a avión - limpiando productos missing...');
 
-      // Actualizar Firebase eliminando todos los missing
+      // Actualizar Firebase eliminando todos los missing y cambiando status
       const cartRef = doc(db, 'carts', cart.id);
       await updateDoc(cartRef, {
         missing: [],
+        status: 'vuelo',
         updated_at: new Date()
       });
 
       // Actualizar estado local
       setCart(prev => prev ? {
         ...prev,
-        missing: []
+        missing: [],
+        status: 'vuelo'
       } : null);
 
       // Limpiar productos completados también
@@ -461,10 +466,37 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
       setSelectedProducts([]);
       setOptimalPath(null);
 
-      console.log('✅ Cart enviado a avión - productos missing eliminados');
+      console.log('✅ Cart enviado a avión - productos missing eliminados y status cambiado a vuelo');
 
     } catch (error) {
       console.error('❌ Error enviando cart a avión:', error);
+    }
+  };
+
+  // Función para cambiar status de vuelo a limpieza otravez
+  const resetToCleaning = async () => {
+    try {
+      if (!cart) return;
+
+      console.log('🔄 Cambiando status de vuelo a limpieza otravez...');
+
+      // Actualizar Firebase cambiando status
+      const cartRef = doc(db, 'carts', cart.id);
+      await updateDoc(cartRef, {
+        status: 'limpieza otravez',
+        updated_at: new Date()
+      });
+
+      // Actualizar estado local
+      setCart(prev => prev ? {
+        ...prev,
+        status: 'limpieza otravez'
+      } : null);
+
+      console.log('✅ Status cambiado a limpieza otravez');
+
+    } catch (error) {
+      console.error('❌ Error cambiando status:', error);
     }
   };
 
@@ -600,6 +632,23 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
                       </Button>
                       <p className="text-xs text-slate-500 mt-2 text-center">
                         Elimina todos los productos faltantes del cart
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Botón para cambiar de vuelo a limpieza otravez */}
+                  {cart.status === 'vuelo' && (
+                    <div className="mt-4">
+                      <Button
+                        onClick={resetToCleaning}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                        size="lg"
+                      >
+                        <RotateCcw className="w-5 h-5 mr-2" />
+                        Limpieza Otravez
+                      </Button>
+                      <p className="text-xs text-slate-500 mt-2 text-center">
+                        Reinicia el cart para nueva limpieza
                       </p>
                     </div>
                   )}

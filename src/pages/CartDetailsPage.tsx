@@ -15,7 +15,8 @@ import {
   Loader2,
   CheckCircle,
   MapPin,
-  Plane
+  Plane,
+  RotateCcw
 } from 'lucide-react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SiteHeader } from '@/components/site-header';
@@ -64,6 +65,7 @@ interface Cart {
   missing: MissingProduct[];
   tipo: string;
   activo: boolean;
+  status?: string;
   created_at: any;
   updated_at: any;
 }
@@ -115,6 +117,7 @@ export default function CartDetailsPage({ cartId, onBack }: CartDetailsPageProps
             missing: data.missing || [],
             tipo: data.tipo || 'unknown',
             activo: data.activo !== undefined ? data.activo : true,
+            status: data.status || 'limpieza',
             created_at: data.created_at,
             updated_at: data.updated_at
           };
@@ -648,10 +651,11 @@ ${JSON.stringify(currentMissing, null, 2)}
 
       console.log('✈️ Enviando cart a vuelo - limpiando productos missing...');
 
-      // Actualizar Firebase eliminando todos los missing
+      // Actualizar Firebase eliminando todos los missing y cambiando status
       const cartRef = doc(db, 'carts', cart.id);
       await updateDoc(cartRef, {
         missing: [],
+        status: 'vuelo',
         updated_at: new Date()
       });
 
@@ -659,13 +663,42 @@ ${JSON.stringify(currentMissing, null, 2)}
       setCart(prev => prev ? {
         ...prev,
         missing: [],
+        status: 'vuelo',
         updated_at: new Date()
       } : null);
 
-      console.log('✅ Cart enviado a vuelo - productos missing eliminados');
+      console.log('✅ Cart enviado a vuelo - productos missing eliminados y status cambiado a vuelo');
 
     } catch (error) {
       console.error('❌ Error enviando cart a vuelo:', error);
+    }
+  };
+
+  // Función para cambiar status de vuelo a limpieza otravez
+  const resetToCleaning = async () => {
+    try {
+      if (!cart) return;
+
+      console.log('🔄 Cambiando status de vuelo a limpieza otravez...');
+
+      // Actualizar Firebase cambiando status
+      const cartRef = doc(db, 'carts', cart.id);
+      await updateDoc(cartRef, {
+        status: 'limpieza otravez',
+        updated_at: new Date()
+      });
+
+      // Actualizar estado local
+      setCart(prev => prev ? {
+        ...prev,
+        status: 'limpieza otravez',
+        updated_at: new Date()
+      } : null);
+
+      console.log('✅ Status cambiado a limpieza otravez');
+
+    } catch (error) {
+      console.error('❌ Error cambiando status:', error);
     }
   };
 
@@ -966,6 +999,38 @@ ${JSON.stringify(currentMissing, null, 2)}
                 <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
                   <p className="text-sm text-orange-800">
                     <strong>⚠️ Advertencia:</strong> Esta acción eliminará permanentemente todos los productos faltantes del cart.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Botón para cambiar de vuelo a limpieza otravez */}
+          {cart.status === 'vuelo' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <RotateCcw className="h-5 w-5" />
+                  Reiniciar Limpieza
+                </CardTitle>
+                <CardDescription>
+                  Cambia el status del cart para permitir nueva limpieza
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-center">
+                  <Button
+                    onClick={resetToCleaning}
+                    className="text-lg px-8 py-4 h-auto bg-blue-600 hover:bg-blue-700 text-white"
+                    size="lg"
+                  >
+                    <RotateCcw className="w-6 h-6 mr-3" />
+                    Limpieza Otravez
+                  </Button>
+                </div>
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>ℹ️ Información:</strong> Este botón cambia el status del cart de "vuelo" a "limpieza otravez" para permitir una nueva limpieza.
                   </p>
                 </div>
               </CardContent>
