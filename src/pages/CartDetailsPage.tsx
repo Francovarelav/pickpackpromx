@@ -4,11 +4,11 @@ import { doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore'
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
+import {
   ArrowLeft,
-  Package, 
-  ShoppingCart, 
-  AlertCircle, 
+  Package,
+  ShoppingCart,
+  AlertCircle,
   Minus,
   Mic,
   MicOff,
@@ -42,6 +42,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { useNavigation } from '../contexts/NavigationContext';
 
 interface CartProduct {
   product_id: string;
@@ -99,6 +100,7 @@ function hasAlcoholBottles(productos: CartProduct[]): boolean {
 }
 
 export default function CartDetailsPage({ cartId, onBack }: CartDetailsPageProps) {
+  const { navigate } = useNavigation();
   const [cart, setCart] = useState<Cart | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 

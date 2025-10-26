@@ -10,15 +10,13 @@ import {
   Package, 
   Calendar, 
   ShoppingCart, 
-  Clock, 
   CheckCircle, 
   AlertCircle, 
-  Truck,
   Eye,
   Grid3X3,
   List,
-  Plus,
-  Minus
+  Minus,
+  Layers
 } from 'lucide-react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SiteHeader } from '@/components/site-header';
@@ -262,6 +260,17 @@ export default function PicknPackPage() {
                 onClick={() => setViewMode('list')}
               >
                 <List className="w-4 h-4" />
+              </Button>
+              <Button
+                onClick={() => {
+                  // Placeholder para mapa 3D - por ahora no hace nada
+                  console.log('Ver Mapa 3D clicked - placeholder');
+                }}
+                className="bg-green-600 hover:bg-green-700 text-white"
+                size="sm"
+              >
+                <Layers className="w-4 h-4 mr-2" />
+                Ver Mapa 3D
               </Button>
             </div>
           </div>

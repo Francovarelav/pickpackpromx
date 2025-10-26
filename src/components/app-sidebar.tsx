@@ -10,6 +10,7 @@ import {
   IconTruck,
   IconUserCheck,
   IconBottle,
+  IconMap,
 } from "@tabler/icons-react"
 
 import { NavMain } from "@/components/nav-main"
