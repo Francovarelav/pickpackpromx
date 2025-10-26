@@ -84,7 +84,7 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
   const [cart, setCart] = useState<Cart | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [gridSize, setGridSize] = useState({ rows: 5, cols: 13 });
-  const [startPos] = useState({ row: 0, col: 0 });
+  const [startPos, setStartPos] = useState({ row: 0, col: 0 });
   const [products, setProducts] = useState<ShelfProduct[]>([]);
   const [obstacles, setObstacles] = useState<{row: number, col: number}[]>([]);
   const [completedProducts, setCompletedProducts] = useState<string[]>([]);
@@ -196,6 +196,17 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
 
             setObstacles(loadedObstacles);
             console.log(`🚧 ${loadedObstacles.length} obstacles created`);
+
+            // Ajustar punto de inicio si está ocupado
+            const startOccupied = loadedProducts.some(p => p.row === 0 && p.col === 0);
+            if (startOccupied) {
+              let freeCol = 0;
+              while (loadedProducts.some(p => p.row === 0 && p.col === freeCol) && freeCol < newGridSize.cols) {
+                freeCol++;
+              }
+              setStartPos({ row: 0, col: freeCol });
+              console.log(`📍 Punto de inicio ajustado a (0, ${freeCol})`);
+            }
           }
         } else {
           console.error('❌ Cart not found');
