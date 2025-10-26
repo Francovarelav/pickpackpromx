@@ -339,7 +339,7 @@ export default function CartDetailsPage({ cartId, onBack }: CartDetailsPageProps
     try {
       console.log('🤖 Procesando con Gemini...');
       
-      const genAI = new GoogleGenerativeAI('AIzaSyAYv2vcqi_KiLwL811RzLqTNaRpvWoRsqg');
+      const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
       // Preparar lista de productos del cart
@@ -425,7 +425,7 @@ ${JSON.stringify(productList, null, 2)}
     try {
       console.log('🤖 Procesando correcciones con Gemini...');
       
-      const genAI = new GoogleGenerativeAI('AIzaSyAYv2vcqi_KiLwL811RzLqTNaRpvWoRsqg');
+      const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
       // Preparar lista de productos del cart
