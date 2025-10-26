@@ -2,6 +2,7 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { DataTable } from "@/components/data-table"
 import { SectionCards } from "@/components/section-cards"
+import { CartSection } from "@/components/cart-section"
 import { SiteHeader } from "@/components/site-header"
 import {
   SidebarInset,
@@ -11,10 +12,10 @@ import {
 import data from "./data.json"
 
 interface DashboardProps {
-  onNavigate: (page: 'dashboard' | 'generate-order') => void
+  onNavigate?: (page: 'dashboard' | 'generate-order' | 'order-tracking' | 'order-detail', order?: any) => void
 }
 
-export default function Page({ onNavigate }: DashboardProps) {
+export default function Page({ onNavigate }: DashboardProps = {}) {
   return (
     <SidebarProvider
       style={
@@ -24,7 +25,7 @@ export default function Page({ onNavigate }: DashboardProps) {
         } as React.CSSProperties
       }
     >
-      <AppSidebar variant="inset" onNavigate={onNavigate} />
+      <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">
@@ -34,6 +35,7 @@ export default function Page({ onNavigate }: DashboardProps) {
               <div className="px-4 lg:px-6">
                 <ChartAreaInteractive />
               </div>
+              <CartSection />
               <DataTable data={data} />
             </div>
           </div>

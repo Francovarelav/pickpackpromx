@@ -1,4 +1,3 @@
-import * as React from "react"
 import {
   IconCamera,
   IconDashboard,
@@ -20,6 +19,7 @@ import {
   IconChartLine,
   IconUserCheck,
   IconBottle,
+  IconMap,
 } from "@tabler/icons-react"
 
 import { NavDocuments } from "@/components/nav-documents"
@@ -35,9 +35,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-
-interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
-  onNavigate?: (page: 'dashboard' | 'generate-order') => void
+interface AppSidebarProps {
+  onNavigate?: (page: string) => void;
 }
 
 export function AppSidebar({ onNavigate, ...props }: AppSidebarProps) {
@@ -64,9 +63,19 @@ export function AppSidebar({ onNavigate, ...props }: AppSidebarProps) {
         icon: IconTruck,
       },
       {
+        title: "Pick & Pack",
+        url: "orders",
+        icon: IconListDetails,
+      },
+      {
+        title: "Map",
+        url: "map",
+        icon: IconMap,
+      },
+      {
         title: "Generate order",
         url: "generate-order",
-        icon: IconListDetails,
+        icon: IconFileDescription,
       },
       {
         title: "Visual Map Creator",
@@ -82,6 +91,7 @@ export function AppSidebar({ onNavigate, ...props }: AppSidebarProps) {
         title: "Order Tracking",
         url: "#",
         icon: IconTrack,
+        onClick: () => onNavigate?.('order-tracking'),
       },
       {
         title: "Inventory Management",
@@ -105,7 +115,7 @@ export function AppSidebar({ onNavigate, ...props }: AppSidebarProps) {
       },
       {
         title: "Control Bottles Waste",
-        url: "#",
+        url: "alcohol-bottles",
         icon: IconBottle,
       },
     ],
