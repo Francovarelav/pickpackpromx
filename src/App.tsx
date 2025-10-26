@@ -2,6 +2,7 @@ import './App.css'
 import Dashboard from './pages/Dashboard'
 import Products from './pages/Products'
 import Providers from './pages/Providers'
+import PicknPackPage from './pages/PicknPackPage'
 import GenerateOrderPage from './pages/GenerateOrderPage'
 import { NavigationProvider, useNavigation } from './contexts/NavigationContext'
 
@@ -14,6 +15,8 @@ function AppContent() {
         return <Products />
       case 'providers':
         return <Providers />
+      case 'orders':
+        return <PicknPackPage />
       case 'generate-order':
         return <GenerateOrderPage onNavigate={() => {}} />
       default:

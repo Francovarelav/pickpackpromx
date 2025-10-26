@@ -64,9 +64,14 @@ export function AppSidebar({ onNavigate, ...props }: AppSidebarProps) {
         icon: IconTruck,
       },
       {
+        title: "Pick & Pack",
+        url: "orders",
+        icon: IconListDetails,
+      },
+      {
         title: "Generate order",
         url: "generate-order",
-        icon: IconListDetails,
+        icon: IconFileDescription,
       },
       {
         title: "Visual Map Creator",
