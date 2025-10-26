@@ -4,16 +4,17 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
+import {
   ArrowLeft,
-  Package, 
-  ShoppingCart, 
-  AlertCircle, 
+  Package,
+  ShoppingCart,
+  AlertCircle,
   Minus,
   Mic,
   MicOff,
   Loader2,
-  CheckCircle
+  CheckCircle,
+  MapPin
 } from 'lucide-react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SiteHeader } from '@/components/site-header';
@@ -32,6 +33,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { useNavigation } from '../contexts/NavigationContext';
 
 interface CartProduct {
   product_id: string;
@@ -71,6 +73,7 @@ interface CartDetailsPageProps {
 }
 
 export default function CartDetailsPage({ cartId, onBack }: CartDetailsPageProps) {
+  const { navigate } = useNavigation();
   const [cart, setCart] = useState<Cart | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -742,7 +745,7 @@ ${JSON.stringify(currentMissing, null, 2)}
                 </p>
               </div>
             </div>
-            <div className="flex justify-center">
+            <div className="flex justify-center gap-4">
               <Button 
                 onClick={isRecording ? stopRecording : startRecording}
                 className={`text-lg px-8 py-4 h-auto ${
@@ -761,6 +764,15 @@ ${JSON.stringify(currentMissing, null, 2)}
                   <Mic className="w-6 h-6 mr-3" />
                 )}
                 {isProcessing ? 'Procesando...' : isRecording ? 'Detener Grabación' : 'Iniciar Cleansing'}
+              </Button>
+              
+              <Button 
+                onClick={() => navigate('cart-map', { cartId: cartId })}
+                className="text-lg px-8 py-4 h-auto bg-blue-600 hover:bg-blue-700 text-white"
+                size="lg"
+              >
+                <MapPin className="w-6 h-6 mr-3" />
+                Ver Mapa
               </Button>
             </div>
           </div>

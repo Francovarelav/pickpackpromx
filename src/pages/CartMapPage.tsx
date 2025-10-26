@@ -542,8 +542,8 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
                       </CardDescription>
                     </div>
                     <Button
-                      variant="outline"
                       onClick={() => setShow3DDialog(true)}
+                      className="bg-green-600 hover:bg-green-700 text-white"
                     >
                       <Layers className="h-4 w-4 mr-2" />
                       Ver Mapa 3D
