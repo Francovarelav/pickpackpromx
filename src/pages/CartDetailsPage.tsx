@@ -447,53 +447,47 @@ ${JSON.stringify(productList, null, 2)}
       // Preparar missing products actuales
       const currentMissing = cart?.missing || [];
 
-      const prompt = `Eres un asistente especializado en corrección de inventarios minoristas. Tu tarea es procesar correcciones de voz del usuario y ajustar la lista de productos faltantes.
+      const prompt = `Eres un asistente de corrección de inventarios. Procesa el speech del usuario y ajusta el JSON de missing products.
 
-**INSTRUCCIONES:**
-1. Analiza el TRANSCRIPT_DE_CORRECCION del usuario
-2. Compara con la LISTA_DE_PRODUCTOS_DISPONIBLES y MISSING_PRODUCTS_ACTUALES
-3. Aplica las correcciones mencionadas por el usuario
-4. Devuelve el JSON actualizado de missing products
+**REGLAS DE CORRECCIÓN:**
+1. Si el usuario dice "encontré X" o "sí encontré X" → RESTA esa cantidad de cantidad_missing
+2. Si el usuario dice "no encontré X" o "faltan X" → AGREGA o aumenta cantidad_missing
+3. Si el usuario dice "no se vendió X" → AGREGA X a missing
+4. Si cantidad_missing llega a 0 o menos → ELIMINA el producto de missing
 
-**TIPOS DE CORRECCIONES QUE PUEDES PROCESAR:**
-- "No encontré X productos, sino Y" → Ajustar cantidad faltante
-- "Faltó que encontrara X productos" → Agregar a missing
-- "También van a faltar X productos" → Agregar nuevos a missing
-- "Ya no faltan X productos" → Remover de missing
-- "Cambiar X por Y" → Reemplazar productos
+**EJEMPLOS:**
+- "encontré 2 leches" → restar 2 de cantidad_missing de leche
+- "no encontré 3 cocacolas" → agregar 3 a cantidad_missing de cocacola
+- "no se vendió ninguna sprite" → agregar sprite completa a missing
 
-**FORMATO DE SALIDA:**
-Devuelve ÚNICAMENTE un objeto JSON con el array "missing" actualizado:
+**PRODUCTOS DISPONIBLES EN EL CART:**
+${JSON.stringify(productList, null, 2)}
 
-\`\`\`json
+**MISSING ACTUAL:**
+${JSON.stringify(currentMissing, null, 2)}
+
+**SPEECH DEL USUARIO:**
+"${transcriptText}"
+
+**RESPUESTA:** Solo JSON con el array "missing" actualizado:
 {
   "missing": [
     {
-      "cantidad_missing": 5,
+      "cantidad_missing": 2,
       "marca": "Coca-Cola",
-      "presentacion": "355 ml",
+      "presentacion": "355 ml", 
       "product_id": "coca-cola-normal-355-ml",
       "producto": "Coca-Cola Normal",
       "stock_found": 0
     }
   ]
-}
-\`\`\`
-
-**LISTA_DE_PRODUCTOS_DISPONIBLES:**
-${JSON.stringify(productList, null, 2)}
-
-**MISSING_PRODUCTS_ACTUALES:**
-${JSON.stringify(currentMissing, null, 2)}
-
-**TRANSCRIPT_DE_CORRECCION:**
-"${transcriptText}"
-
-**PROPORCIONA ÚNICAMENTE LA RESPUESTA EN FORMATO JSON, SIN NINGÚN TEXTO ADICIONAL ANTES O DESPUÉS.**`;
+}`;
 
       const result = await model.generateContent(prompt);
       const response = await result.response;
       let cleanText = response.text().trim();
+
+      console.log('🤖 Respuesta cruda de Gemini:', cleanText);
 
       // Limpiar markdown si está presente
       if (cleanText.startsWith('```json')) {
@@ -502,13 +496,18 @@ ${JSON.stringify(currentMissing, null, 2)}
         cleanText = cleanText.replace(/```\n?/g, '');
       }
 
+      console.log('🧹 Texto limpio:', cleanText);
+
       const jsonResult = JSON.parse(cleanText);
       console.log('✅ Corrección procesada:', jsonResult);
 
-      // Actualizar missing products con la corrección
-      if (jsonResult.missing) {
-        await updateMissingProductsFromCorrection(jsonResult.missing);
+      // Validar que la respuesta tenga el formato correcto
+      if (!jsonResult.missing || !Array.isArray(jsonResult.missing)) {
+        throw new Error('Respuesta de Gemini no tiene formato correcto');
       }
+
+      // Actualizar missing products con la corrección
+      await updateMissingProductsFromCorrection(jsonResult.missing);
       
     } catch (error) {
       console.error('❌ Error procesando corrección con Gemini:', error);
@@ -619,7 +618,8 @@ ${JSON.stringify(currentMissing, null, 2)}
   const updateMissingProductsFromCorrection = async (correctedMissing: MissingProduct[]) => {
     try {
       console.log('🔄 Actualizando missing products desde corrección...');
-      console.log('📊 Missing products corregidos:', correctedMissing);
+      console.log('📊 Missing products ANTES:', cart?.missing);
+      console.log('📊 Missing products DESPUÉS:', correctedMissing);
       
       if (!cart) return;
       
