@@ -3,14 +3,10 @@ import { db } from '../../firebase';
 import { doc, getDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { 
   ArrowLeft, 
-  Package, 
-  ShoppingCart, 
-  AlertCircle,
-  MapPin,
+  Package,
   Layers,
   Navigation,
   CheckCircle,
@@ -30,16 +26,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-interface CartProduct {
-  product_id: string;
-  producto: string;
-  marca: string;
-  presentacion: string;
-  cantidad_default: number;
-  precio_unitario: number;
-  stock_actual: number;
-}
-
 interface MissingProduct {
   cantidad_missing: number;
   marca: string;
@@ -53,13 +39,7 @@ interface Cart {
   id: string;
   nombre: string;
   descripcion: string;
-  productos: CartProduct[];
-  total_productos: number;
   missing: MissingProduct[];
-  tipo: string;
-  activo: boolean;
-  created_at: any;
-  updated_at: any;
 }
 
 interface ShelfProduct {
@@ -72,6 +52,9 @@ interface ShelfProduct {
   estante: string;
   lado: string;
   altura: string;
+  baseRow: number;
+  baseCol: number;
+  orientation: string;
   product_id: string;
 }
 
@@ -87,6 +70,7 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
   const [startPos] = useState({ row: 19, col: 4 });
   const [products, setProducts] = useState<ShelfProduct[]>([]);
   const [obstacles, setObstacles] = useState<{row: number, col: number}[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [completedProducts, setCompletedProducts] = useState<string[]>([]);
   const [optimalPath, setOptimalPath] = useState<any>(null);
   const [isCalculating, setIsCalculating] = useState(false);
@@ -94,9 +78,11 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
 
   // Cargar cart y productos desde Firebase
   useEffect(() => {
-    const loadData = async () => {
+    const loadDataFromFirebase = async () => {
+      setIsLoading(true);
+      
       try {
-        console.log('🗺️ Loading cart and shelf data...');
+        console.log('🔄 Conectando con Firebase...');
         
         // Cargar cart
         const cartRef = doc(db, 'carts', cartId);
@@ -108,142 +94,162 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
             id: cartSnap.id,
             nombre: data.nombre || 'Cart Sin Nombre',
             descripcion: data.descripcion || '',
-            productos: data.productos || [],
-            total_productos: data.total_productos || 0,
-            missing: data.missing || [],
-            tipo: data.tipo || 'unknown',
-            activo: data.activo !== undefined ? data.activo : true,
-            created_at: data.created_at,
-            updated_at: data.updated_at
+            missing: data.missing || []
           };
           
           setCart(cartData);
           console.log('✅ Cart loaded:', cartData.nombre);
-
-          // Cargar productos del shelf_stock
-          const shelfStockRef = collection(db, 'shelf_stock');
-          const snapshot = await getDocs(shelfStockRef);
-          
-          if (!snapshot.empty) {
-            const FIREBASE_DATA: any[] = [];
-            snapshot.forEach((doc) => {
-              FIREBASE_DATA.push({ id: doc.id, ...doc.data() });
-            });
-
-            console.log(`✅ ${FIREBASE_DATA.length} documentos leídos de Firebase`);
-
-            // Analizar el patrón global del almacén
-            const allY = FIREBASE_DATA.map(item => item.coordenada_y);
-            const allX = FIREBASE_DATA.map(item => item.coordenada_x);
-            const uniqueGlobalY = new Set(allY).size;
-            const uniqueGlobalX = new Set(allX).size;
-            
-            const globalOrientation = uniqueGlobalX > uniqueGlobalY ? 'horizontal' : 'vertical';
-            
-            console.log(`🔍 Análisis global:`);
-            console.log(`   - Columnas únicas (X): ${uniqueGlobalX}`);
-            console.log(`   - Filas únicas (Y): ${uniqueGlobalY}`);
-            console.log(`   - Orientación detectada: ${globalOrientation}`);
-
-            // Agrupar productos por estante
-            const shelfGroups: {[key: string]: any[]} = {};
-            FIREBASE_DATA.forEach(item => {
-              if (!shelfGroups[item.numero_estante]) {
-                shelfGroups[item.numero_estante] = [];
-              }
-              shelfGroups[item.numero_estante].push(item);
-            });
-
-            // Asignar la orientación global a TODOS los estantes
-            const shelfOrientations: {[key: string]: string} = {};
-            Object.keys(shelfGroups).forEach(shelfName => {
-              shelfOrientations[shelfName] = globalOrientation;
-            });
-
-            // Calcular tamaño del grid
-            const maxRow = Math.max(...FIREBASE_DATA.map(item => item.coordenada_y), 0);
-            const maxCol = Math.max(...FIREBASE_DATA.map(item => item.coordenada_x), 0);
-            const newGridSize = {
-              rows: Math.max(maxRow + 3, 6),
-              cols: Math.max(maxCol + 3, 14)
-            };
-            setGridSize(newGridSize);
-
-            // Ajustar posiciones de productos
-            const loadedProducts = FIREBASE_DATA.map((item) => {
-              const orientation = shelfOrientations[item.numero_estante];
-              let adjustedRow = item.coordenada_y;
-              let adjustedCol = item.coordenada_x;
-
-              if (orientation === 'horizontal') {
-                if (item.lado === 'A') {
-                  adjustedRow = item.coordenada_y - 1;
-                } else if (item.lado === 'B') {
-                  adjustedRow = item.coordenada_y + 1;
-                }
-              } else {
-                if (item.lado === 'A') {
-                  adjustedCol = item.coordenada_x - 1;
-                } else if (item.lado === 'B') {
-                  adjustedCol = item.coordenada_x + 1;
-                }
-              }
-
-              return {
-                id: item.id,
-                name: `${item.producto} (${item.presentacion})`,
-                row: Math.max(0, adjustedRow),
-                col: Math.max(0, adjustedCol),
-                cantidad: item.cantidad,
-                marca: item.marca,
-                estante: item.numero_estante,
-                lado: item.lado,
-                altura: item.altura,
-                baseRow: item.coordenada_y,
-                baseCol: item.coordenada_x,
-                orientation: orientation,
-                product_id: item.product_id
-              };
-            });
-
-            setProducts(loadedProducts);
-
-            // Crear obstáculos
-            const obstaclePositions = new Set();
-            FIREBASE_DATA.forEach((item) => {
-              obstaclePositions.add(`${item.coordenada_x},${item.coordenada_y}`);
-            });
-
-            const loadedObstacles = Array.from(obstaclePositions).map((pos) => {
-              const [col, row] = pos.split(',').map(Number);
-              return { row, col };
-            });
-
-            setObstacles(loadedObstacles);
-            
-            console.log(`✅ ${loadedProducts.length} productos cargados`);
-            console.log(`🚧 ${loadedObstacles.length} estanterías`);
-            console.log(`📐 Orientación: ${globalOrientation}`);
-          }
-        } else {
-          console.error('❌ Cart not found');
         }
+
+        // Leer datos de Firestore
+        const shelfStockRef = collection(db, 'shelf_stock');
+        const snapshot = await getDocs(shelfStockRef);
+        
+        if (snapshot.empty) {
+          throw new Error('No se encontraron productos en la colección shelf_stock');
+        }
+
+        const FIREBASE_DATA: any[] = [];
+        snapshot.forEach((doc) => {
+          FIREBASE_DATA.push({ id: doc.id, ...doc.data() });
+        });
+
+        console.log(`✅ ${FIREBASE_DATA.length} documentos leídos de Firebase`);
+
+        // Analizar el patrón global del almacén
+        const allY = FIREBASE_DATA.map(item => item.coordenada_y);
+        const allX = FIREBASE_DATA.map(item => item.coordenada_x);
+        const uniqueGlobalY = new Set(allY).size;
+        const uniqueGlobalX = new Set(allX).size;
+        
+        const globalOrientation = uniqueGlobalX > uniqueGlobalY ? 'horizontal' : 'vertical';
+        
+        console.log(`🔍 Análisis global:`);
+        console.log(`   - Columnas únicas (X): ${uniqueGlobalX}`);
+        console.log(`   - Filas únicas (Y): ${uniqueGlobalY}`);
+        console.log(`   - Orientación detectada: ${globalOrientation}`);
+
+        // Agrupar productos por estante
+        const shelfGroups: {[key: string]: any[]} = {};
+        FIREBASE_DATA.forEach(item => {
+          if (!shelfGroups[item.numero_estante]) {
+            shelfGroups[item.numero_estante] = [];
+          }
+          shelfGroups[item.numero_estante].push(item);
+        });
+
+        // Asignar la orientación global a TODOS los estantes
+        const shelfOrientations: {[key: string]: string} = {};
+        Object.keys(shelfGroups).forEach(shelfName => {
+          shelfOrientations[shelfName] = globalOrientation;
+        });
+
+        // Calcular tamaño del grid
+        const maxRow = Math.max(...FIREBASE_DATA.map(item => item.coordenada_y), 0);
+        const maxCol = Math.max(...FIREBASE_DATA.map(item => item.coordenada_x), 0);
+        const newGridSize = {
+          rows: Math.max(maxRow + 3, 6),
+          cols: Math.max(maxCol + 3, 14)
+        };
+        setGridSize(newGridSize);
+
+        // Ajustar posiciones de productos
+        const loadedProducts = FIREBASE_DATA.map((item) => {
+          const orientation = shelfOrientations[item.numero_estante];
+          let adjustedRow = item.coordenada_y;
+          let adjustedCol = item.coordenada_x;
+
+          if (orientation === 'horizontal') {
+            if (item.lado === 'A') {
+              adjustedRow = item.coordenada_y - 1;
+            } else if (item.lado === 'B') {
+              adjustedRow = item.coordenada_y + 1;
+            }
+          } else {
+            if (item.lado === 'A') {
+              adjustedCol = item.coordenada_x - 1;
+            } else if (item.lado === 'B') {
+              adjustedCol = item.coordenada_x + 1;
+            }
+          }
+
+          return {
+            id: item.id,
+            name: `${item.producto} (${item.presentacion})`,
+            row: Math.max(0, adjustedRow),
+            col: Math.max(0, adjustedCol),
+            cantidad: item.cantidad,
+            marca: item.marca,
+            estante: item.numero_estante,
+            lado: item.lado,
+            altura: item.altura,
+            baseRow: item.coordenada_y,
+            baseCol: item.coordenada_x,
+            orientation: orientation,
+            product_id: item.product_id
+          };
+        });
+
+        // Crear obstáculos
+        const obstaclePositions = new Set();
+        FIREBASE_DATA.forEach((item) => {
+          obstaclePositions.add(`${item.coordenada_x},${item.coordenada_y}`);
+        });
+
+        const loadedObstacles = Array.from(obstaclePositions).map((pos) => {
+          const [col, row] = (pos as string).split(',').map(Number);
+          return { row, col };
+        });
+
+        setProducts(loadedProducts);
+        setObstacles(loadedObstacles);
+        
+        console.log(`✅ ${loadedProducts.length} productos cargados`);
+        console.log(`🚧 ${loadedObstacles.length} estanterías`);
+        console.log(`📐 Orientación: ${globalOrientation}`);
+
+        // Pre-seleccionar productos del cart
+        if (cartSnap.exists()) {
+          const cartData = cartSnap.data();
+          
+          if (cartData.missing && Array.isArray(cartData.missing)) {
+            console.log(`📦 ${cartData.missing.length} productos en missing`);
+            
+            const productIdsToSelect: string[] = [];
+            
+            cartData.missing.forEach((missingItem: MissingProduct) => {
+              const productId = missingItem.product_id;
+              const matchedProduct = loadedProducts.find(p => p.product_id === productId);
+              
+              if (matchedProduct) {
+                productIdsToSelect.push(matchedProduct.id);
+                console.log(`✓ Producto encontrado: ${matchedProduct.name}`);
+              } else {
+                console.log(`⚠️ Producto no encontrado: ${productId}`);
+              }
+            });
+            
+            setSelectedProducts(productIdsToSelect);
+            console.log(`✅ ${productIdsToSelect.length} productos pre-seleccionados`);
+          }
+        }
+
       } catch (error) {
-        console.error('❌ Error loading data:', error);
+        console.error('❌ Error al cargar datos de Firebase:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadData();
+    loadDataFromFirebase();
   }, [cartId]);
 
-  // Calcular ruta óptima automáticamente cuando se carga el cart
+  // Calcular ruta óptima automáticamente
   useEffect(() => {
-    if (cart && cart.missing.length > 0 && products.length > 0 && !isCalculating) {
+    if (cart && cart.missing.length > 0 && products.length > 0 && selectedProducts.length > 0 && !isCalculating && !optimalPath) {
       calculateOptimalRoute();
     }
-  }, [cart, products]);
+  }, [cart, products, selectedProducts]);
 
   const findPath = (start: {row: number, col: number}, end: {row: number, col: number}) => {
     const isValid = (r: number, c: number) => {
@@ -308,28 +314,18 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
   };
 
   const calculateOptimalRoute = () => {
-    if (!cart || cart.missing.length === 0) return;
+    if (selectedProducts.length === 0) return;
 
     setIsCalculating(true);
     
     setTimeout(() => {
-      // Filtrar productos missing que no están completados
-      const activeMissing = cart.missing.filter(m => !completedProducts.includes(m.product_id));
-      
-      // Encontrar productos en shelf que coincidan con missing
-      const productsToVisit = activeMissing
-        .map(missing => products.find(p => p.product_id === missing.product_id))
-        .filter(p => p !== undefined) as ShelfProduct[];
-
-      if (productsToVisit.length === 0) {
-        setOptimalPath(null);
-        setIsCalculating(false);
-        return;
-      }
+      const productsToVisit = selectedProducts.map(id => 
+        products.find(p => p.id === id)
+      ).filter(p => p !== undefined) as ShelfProduct[];
 
       let currentPos = startPos;
       let remaining = [...productsToVisit];
-      let route: any[] = [];
+      let route = [];
       let totalDistance = 0;
       let stepNumber = 1;
 
@@ -373,48 +369,10 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
       setOptimalPath({
         route,
         totalDistance: Math.round(totalDistance * 10) / 10,
-        totalProducts: productsToVisit.length
+        totalProducts: selectedProducts.length
       });
       setIsCalculating(false);
     }, 100);
-  };
-
-  const toggleProductCompletion = async (productId: string) => {
-    const newCompleted = completedProducts.includes(productId)
-      ? completedProducts.filter(id => id !== productId)
-      : [...completedProducts, productId];
-    
-    setCompletedProducts(newCompleted);
-    
-    // Recalcular ruta
-    setTimeout(() => calculateOptimalRoute(), 100);
-  };
-
-  const saveCompletedProducts = async () => {
-    if (!cart) return;
-
-    try {
-      // Actualizar missing products eliminando los completados
-      const updatedMissing = cart.missing.filter(m => !completedProducts.includes(m.product_id));
-      
-      const cartRef = doc(db, 'carts', cart.id);
-      await updateDoc(cartRef, {
-        missing: updatedMissing,
-        updated_at: new Date()
-      });
-
-      // Actualizar estado local
-      setCart(prev => prev ? {
-        ...prev,
-        missing: updatedMissing,
-        updated_at: new Date()
-      } : null);
-
-      setCompletedProducts([]);
-      console.log('✅ Productos completados guardados en Firebase');
-    } catch (error) {
-      console.error('❌ Error guardando productos completados:', error);
-    }
   };
 
   const getCellContent = (row: number, col: number) => {
@@ -422,7 +380,27 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
       return { type: 'start', content: '🏁' };
     }
 
-    // Mostrar ruta
+    // Verificar si esta celda es el destino de un segmento de ruta
+    let isRouteDestination = false;
+    if (optimalPath) {
+      for (const segment of optimalPath.route) {
+        const destination = segment.path[segment.path.length - 1];
+        if (destination && destination.row === row && destination.col === col) {
+          isRouteDestination = true;
+          break;
+        }
+      }
+    }
+
+    // Verificar si hay un producto seleccionado en esta celda
+    const product = products.find(p => p.row === row && p.col === col);
+    
+    // Si es un producto seleccionado Y es destino de la ruta, mostrar el producto
+    if (product && selectedProducts.includes(product.id) && isRouteDestination) {
+      return { type: 'product', content: product.name[0], isSelected: true, productId: product.id };
+    }
+
+    // Mostrar números de ruta
     if (optimalPath) {
       for (const segment of optimalPath.route) {
         const cellInPath = segment.path.find((p: any) => p.row === row && p.col === col);
@@ -432,51 +410,37 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
       }
     }
 
-    // Mostrar obstáculos
     if (obstacles.some(obs => obs.row === row && obs.col === col)) {
       return { type: 'obstacle', content: '🚧' };
     }
 
-    // Mostrar productos
-    const product = products.find(p => p.row === row && p.col === col);
     if (product) {
-      const isMissing = cart?.missing.some(m => m.product_id === product.product_id);
-      const isCompleted = completedProducts.includes(product.product_id);
-      return { 
-        type: 'product', 
-        content: product.name[0], 
-        isMissing, 
-        isCompleted,
-        productId: product.id 
-      };
+      const isSelected = selectedProducts.includes(product.id);
+      return { type: 'product', content: product.name[0], isSelected, productId: product.id };
     }
 
     return { type: 'empty', content: '' };
   };
 
-  const getTypeColor = (tipo: string) => {
-    switch (tipo.toLowerCase()) {
-      case 'catering':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'evento':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'especial':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
+  const toggleProductCompletion = async (productId: string) => {
+    const newCompleted = completedProducts.includes(productId)
+      ? completedProducts.filter(id => id !== productId)
+      : [...completedProducts, productId];
+    
+    setCompletedProducts(newCompleted);
 
-  const getTypeIcon = (tipo: string) => {
-    switch (tipo.toLowerCase()) {
-      case 'catering':
-        return <ShoppingCart className="h-3 w-3" />;
-      case 'evento':
-        return <Package className="h-3 w-3" />;
-      case 'especial':
-        return <AlertCircle className="h-3 w-3" />;
-      default:
-        return <Package className="h-3 w-3" />;
+    // Si todos los productos están completados, actualizar Firebase
+    if (newCompleted.length === selectedProducts.length && cart) {
+      try {
+        const cartRef = doc(db, 'carts', cart.id);
+        await updateDoc(cartRef, {
+          missing: [],
+          updated_at: new Date()
+        });
+        console.log('✅ Todos los productos completados - missing actualizado en Firebase');
+      } catch (error) {
+        console.error('❌ Error actualizando cart:', error);
+      }
     }
   };
 
@@ -486,12 +450,10 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
         <AppSidebar />
         <SidebarInset>
           <SiteHeader />
-          <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
-                <p className="text-muted-foreground">Cargando mapa del cart...</p>
-              </div>
+          <div className="flex flex-1 items-center justify-center p-4">
+            <div className="text-center">
+              <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-blue-600" />
+              <p className="text-lg font-semibold">Cargando mapa del almacén...</p>
             </div>
           </div>
         </SidebarInset>
@@ -505,17 +467,13 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
         <AppSidebar />
         <SidebarInset>
           <SiteHeader />
-          <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Cart no encontrado</h3>
-                <p className="text-muted-foreground mb-4">El cart solicitado no existe o fue eliminado</p>
-                <Button onClick={onBack}>
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Volver al Mapa
-                </Button>
-              </div>
+          <div className="flex flex-1 items-center justify-center p-4">
+            <div className="text-center">
+              <p className="text-lg font-semibold text-red-600">Error: Cart no encontrado</p>
+              <Button onClick={onBack} className="mt-4">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Volver
+              </Button>
             </div>
           </div>
         </SidebarInset>
@@ -528,17 +486,17 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
       <AppSidebar />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+        <div className="flex flex-1 flex-col gap-4 p-4">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
               <Button variant="outline" onClick={onBack}>
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Volver
               </Button>
               <div>
-                <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-                  <Navigation className="h-8 w-8 text-blue-600" />
+                <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+                  <Navigation className="text-blue-600" />
                   {cart.nombre}
                 </h1>
                 <p className="text-muted-foreground">
@@ -546,23 +504,75 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
                 </p>
               </div>
             </div>
-            <Badge className={`${getTypeColor(cart.tipo)} flex items-center gap-1`}>
-              {getTypeIcon(cart.tipo)}
-              {cart.tipo}
-            </Badge>
           </div>
 
-          {/* Main Content - Two Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            {/* Left Side - 2D Map */}
-            <div className="lg:col-span-2">
-              <Card className="h-full">
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Columna izquierda: Lista de productos faltantes */}
+            <div className="lg:col-span-1">
+              <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        <MapPin className="h-5 w-5" />
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5" />
+                    Productos Faltantes
+                  </CardTitle>
+                  <CardDescription>
+                    {completedProducts.length} de {cart.missing.length} completados
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {cart.missing.map((item, idx) => {
+                      const product = products.find(p => p.product_id === item.product_id);
+                      const isCompleted = product ? completedProducts.includes(product.id) : false;
+                      
+                      return (
+                        <div
+                          key={idx}
+                          className={`flex items-start gap-3 p-3 rounded-lg border ${
+                            isCompleted ? 'bg-green-50 border-green-200' : 'bg-white border-slate-200'
+                          }`}
+                        >
+                          <Checkbox
+                            checked={isCompleted}
+                            onCheckedChange={() => product && toggleProductCompletion(product.id)}
+                            className="mt-1"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className={`font-medium ${isCompleted ? 'line-through text-slate-500' : 'text-slate-900'}`}>
+                              {item.producto}
+                            </p>
+                            <p className="text-sm text-slate-600">
+                              {item.marca} - {item.presentacion}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs font-semibold text-red-600">
+                                Faltan: {item.cantidad_missing}
+                              </span>
+                              {product && (
+                                <span className="text-xs text-slate-500">
+                                  📍 {product.estante}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {isCompleted && (
+                            <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Columna derecha: Mapa 2D */}
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex-1">
+                      <CardTitle className="text-xl font-bold text-slate-800">
                         Mapa 2D - Ruta Óptima
                       </CardTitle>
                       <CardDescription>
@@ -598,10 +608,9 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
                                 w-10 h-10 flex items-center justify-center text-xs font-bold
                                 transition-all border border-slate-200 rounded
                                 ${cell.type === 'start' ? 'bg-green-400 text-lg shadow-md' : ''}
-                                ${cell.type === 'product' && cell.isMissing && !cell.isCompleted ? 'bg-red-500 text-white shadow-sm' : ''}
-                                ${cell.type === 'product' && cell.isMissing && cell.isCompleted ? 'bg-green-500 text-white shadow-sm' : ''}
-                                ${cell.type === 'product' && !cell.isMissing ? 'bg-blue-200 text-blue-800' : ''}
-                                ${cell.type === 'obstacle' ? 'bg-gradient-to-br from-gray-500 to-gray-600 text-lg shadow-md' : ''}
+                                ${cell.type === 'product' && cell.isSelected ? 'bg-blue-500 text-white shadow-sm' : ''}
+                                ${cell.type === 'product' && !cell.isSelected ? 'bg-blue-200 text-blue-800' : ''}
+                                ${cell.type === 'obstacle' ? 'bg-gradient-to-br from-red-500 to-red-600 text-lg shadow-md' : ''}
                                 ${cell.type === 'path' ? 'bg-yellow-200 text-yellow-800 font-bold' : ''}
                                 ${cell.type === 'empty' ? 'bg-slate-50' : ''}
                               `}
@@ -614,114 +623,26 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
                       )}
                     </div>
                   </div>
+
+                  {/* Leyenda */}
                   <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 bg-green-400 rounded shadow"></div>
                       <span>🏁 Inicio</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 bg-red-500 rounded shadow"></div>
-                      <span>📦 Faltante</span>
+                      <div className="w-6 h-6 bg-blue-500 rounded shadow"></div>
+                      <span>📦 Producto</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 bg-green-500 rounded shadow"></div>
-                      <span>✅ Completado</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 bg-gradient-to-br from-gray-500 to-gray-600 rounded shadow"></div>
+                      <div className="w-6 h-6 bg-gradient-to-br from-red-500 to-red-600 rounded shadow"></div>
                       <span>🚧 Estantería</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 bg-yellow-200 rounded"></div>
                       <span>🛤️ Ruta</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 bg-blue-200 rounded"></div>
-                      <span>📦 Producto</span>
-                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Right Side - Missing Products List */}
-            <div>
-              <Card className="h-full">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Package className="h-5 w-5" />
-                    Productos Faltantes
-                  </CardTitle>
-                  <CardDescription>
-                    {cart.missing.length} productos por recolectar
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 max-h-[600px] overflow-y-auto">
-                    {cart.missing.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
-                        <p>No hay productos faltantes</p>
-                      </div>
-                    ) : (
-                      cart.missing.map((missing, index) => {
-                        const isCompleted = completedProducts.includes(missing.product_id);
-                        const shelfProduct = products.find(p => p.product_id === missing.product_id);
-                        
-                        return (
-                          <div 
-                            key={index} 
-                            className={`flex items-start gap-3 p-3 rounded-lg border-2 transition-all ${
-                              isCompleted 
-                                ? 'bg-green-50 border-green-200' 
-                                : 'bg-red-50 border-red-200'
-                            }`}
-                          >
-                            <Checkbox
-                              checked={isCompleted}
-                              onCheckedChange={() => toggleProductCompletion(missing.product_id)}
-                              className="mt-1"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className={`font-semibold ${isCompleted ? 'line-through text-green-700' : 'text-red-800'}`}>
-                                {missing.producto}
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                {missing.marca} - {missing.presentacion}
-                              </div>
-                              <div className="text-xs mt-1 flex items-center gap-2 flex-wrap">
-                                <span className={isCompleted ? 'text-green-600' : 'text-red-600'}>
-                                  Faltan: {missing.cantidad_missing}
-                                </span>
-                                {shelfProduct && (
-                                  <>
-                                    <span className="text-blue-600">
-                                      📍 {shelfProduct.estante}
-                                    </span>
-                                    <span className={shelfProduct.lado === 'A' ? 'text-purple-600' : 'text-orange-600'}>
-                                      {shelfProduct.lado === 'A' ? '⬆️A' : '⬇️B'}
-                                    </span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                  
-                  {completedProducts.length > 0 && (
-                    <div className="mt-4 pt-4 border-t">
-                      <Button 
-                        onClick={saveCompletedProducts}
-                        className="w-full bg-green-600 hover:bg-green-700"
-                      >
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Guardar Productos Completados ({completedProducts.length})
-                      </Button>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             </div>
@@ -729,24 +650,20 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
         </div>
       </SidebarInset>
 
-      {/* Dialog para Mapa 3D */}
+      {/* Dialog para Mapa 3D (placeholder) */}
       <Dialog open={show3DDialog} onOpenChange={setShow3DDialog}>
-        <DialogContent className="max-w-4xl h-[80vh]">
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Layers className="h-5 w-5" />
-              Mapa 3D
-            </DialogTitle>
+            <DialogTitle>Mapa 3D del Almacén</DialogTitle>
             <DialogDescription>
-              Vista tridimensional del almacén
+              Vista tridimensional del almacén (próximamente)
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 flex items-center justify-center bg-gray-50 rounded-lg">
-            <div className="text-center text-muted-foreground">
-              <Layers className="h-16 w-16 mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium mb-2">Mapa 3D</p>
-              <p className="text-sm">Espacio reservado para el mapa 3D</p>
-              <p className="text-xs mt-2">Aquí se mostrará la vista tridimensional del almacén</p>
+          <div className="flex items-center justify-center h-96 bg-slate-100 rounded-lg">
+            <div className="text-center">
+              <Layers className="w-16 h-16 mx-auto mb-4 text-slate-400" />
+              <p className="text-lg font-semibold text-slate-600">Mapa 3D</p>
+              <p className="text-sm text-slate-500">Funcionalidad en desarrollo</p>
             </div>
           </div>
         </DialogContent>
