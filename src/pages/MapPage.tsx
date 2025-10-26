@@ -13,7 +13,7 @@ import {
   Search,
   Grid3X3,
   List,
-  Eye
+  MapPin
 } from 'lucide-react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SiteHeader } from '@/components/site-header';
@@ -310,7 +310,7 @@ export default function MapPage() {
                           navigate('cart-map', { cartId: cart.id });
                         }}
                       >
-                        <Map className="h-4 w-4 mr-2" />
+                        <MapPin className="h-4 w-4 mr-2" />
                         Ver Mapa
                       </Button>
                     </div>

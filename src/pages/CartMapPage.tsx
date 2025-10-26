@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db } from '../firebase';
+import { db } from '../../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -153,12 +153,12 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
           <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
-                <Map className="h-12 w-12 text-muted-foreground mb-4" />
+                <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">Cart no encontrado</h3>
                 <p className="text-muted-foreground mb-4">El cart solicitado no existe o fue eliminado</p>
-                <Button onClick={onBack} variant="outline">
+                <Button onClick={onBack}>
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Volver
+                  Volver al Mapa
                 </Button>
               </div>
             </div>
@@ -179,28 +179,27 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
             <div className="flex items-center gap-2">
               <Button variant="outline" onClick={onBack}>
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Volver
+                Volver al Mapa
               </Button>
               <div>
                 <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
                   <Map className="h-8 w-8" />
-                  Mapa de {cart.nombre}
+                  Mapa del Cart: {cart.nombre}
                 </h1>
                 <p className="text-muted-foreground">
-                  Visualización geográfica del cart
+                  Visualización geográfica y espacial del cart
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge className={`${getTypeColor(cart.tipo)} flex items-center gap-1`}>
-                {getTypeIcon(cart.tipo)}
-                {cart.tipo}
-              </Badge>
-            </div>
+            <Badge className={`${getTypeColor(cart.tipo)} flex items-center gap-1`}>
+              {getTypeIcon(cart.tipo)}
+              {cart.tipo}
+            </Badge>
           </div>
 
-          {/* Main Map Layout */}
+          {/* Main Content - Two Column Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-200px)]">
+            
             {/* Left Side - 2D Map */}
             <Card className="flex flex-col">
               <CardHeader>
@@ -209,19 +208,15 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
                   Mapa 2D
                 </CardTitle>
                 <CardDescription>
-                  Vista plana del almacén y ubicación de productos
+                  Vista plana del layout del cart
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-1 flex items-center justify-center bg-gray-50 rounded-lg">
-                <div className="text-center">
-                  <Map className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Mapa 2D</h3>
-                  <p className="text-muted-foreground">
-                    Aquí se mostrará el mapa 2D del almacén
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Cart: {cart.nombre}
-                  </p>
+                <div className="text-center text-muted-foreground">
+                  <MapPin className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium mb-2">Mapa 2D</p>
+                  <p className="text-sm">Espacio reservado para el mapa 2D</p>
+                  <p className="text-xs mt-2">Aquí se mostrará la vista plana del cart</p>
                 </div>
               </CardContent>
             </Card>
@@ -234,19 +229,15 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
                   Mapa 3D
                 </CardTitle>
                 <CardDescription>
-                  Vista tridimensional del almacén
+                  Vista tridimensional del cart
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-1 flex items-center justify-center bg-gray-50 rounded-lg">
-                <div className="text-center">
-                  <Layers className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Ver Mapa 3D</h3>
-                  <p className="text-muted-foreground">
-                    Aquí se mostrará el mapa 3D del almacén
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Cart: {cart.nombre}
-                  </p>
+                <div className="text-center text-muted-foreground">
+                  <Layers className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium mb-2">Mapa 3D</p>
+                  <p className="text-sm">Espacio reservado para el mapa 3D</p>
+                  <p className="text-xs mt-2">Aquí se mostrará la vista tridimensional del cart</p>
                 </div>
               </CardContent>
             </Card>
@@ -257,29 +248,24 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
             <CardHeader>
               <CardTitle>Información del Cart</CardTitle>
               <CardDescription>
-                Detalles del cart seleccionado para el mapa
+                Detalles básicos del cart seleccionado
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <h4 className="font-semibold">Productos</h4>
-                  <p className="text-2xl font-bold text-blue-600">{cart.total_productos}</p>
-                  <p className="text-sm text-muted-foreground">Total de productos</p>
+                  <h4 className="font-semibold">Descripción</h4>
+                  <p className="text-sm text-muted-foreground">{cart.descripcion}</p>
                 </div>
                 <div className="space-y-2">
-                  <h4 className="font-semibold">Faltantes</h4>
-                  <p className={`text-2xl font-bold ${cart.missing.length > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    {cart.missing.length}
-                  </p>
-                  <p className="text-sm text-muted-foreground">Productos faltantes</p>
+                  <h4 className="font-semibold">Productos</h4>
+                  <p className="text-sm">{cart.total_productos} productos</p>
                 </div>
                 <div className="space-y-2">
                   <h4 className="font-semibold">Estado</h4>
-                  <Badge variant={cart.activo ? 'default' : 'secondary'} className="text-lg px-3 py-1">
+                  <Badge variant={cart.activo ? 'default' : 'secondary'}>
                     {cart.activo ? 'Activo' : 'Inactivo'}
                   </Badge>
-                  <p className="text-sm text-muted-foreground">Estado actual</p>
                 </div>
               </div>
             </CardContent>

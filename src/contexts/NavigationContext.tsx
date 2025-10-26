@@ -4,7 +4,6 @@ interface NavigationContextType {
   currentPage: string;
   setCurrentPage: (page: string) => void;
   navigationParams: Record<string, any>;
-  setNavigationParams: (params: Record<string, any>) => void;
   navigate: (page: string, params?: Record<string, any>) => void;
 }
 
@@ -40,7 +39,6 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
       currentPage, 
       setCurrentPage, 
       navigationParams, 
-      setNavigationParams, 
       navigate 
     }}>
       {children}
