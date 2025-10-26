@@ -21,7 +21,7 @@ import {
   SidebarInset,
   SidebarProvider,
 } from '@/components/ui/sidebar';
-import { useNavigation } from '../../contexts/NavigationContext';
+import { useNavigation } from '../contexts/NavigationContext';
 
 interface CartProduct {
   product_id: string;
