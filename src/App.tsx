@@ -1,5 +1,4 @@
 import './App.css'
-import { useState } from 'react'
 import Dashboard from './pages/Dashboard'
 import Products from './pages/Products'
 import Providers from './pages/Providers'
@@ -9,6 +8,7 @@ import Airlines from './pages/Airlines'
 import Employees from './pages/Employees'
 import OrderTrackingPage from './pages/OrderTrackingPage'
 import OrderDetailPage from './pages/OrderDetailPage'
+import AlcoholBottles from './pages/AlcoholBottles'
 import AlcoholBottles from './pages/AlcoholBottles'
 import { NavigationProvider, useNavigation } from './contexts/NavigationContext'
 
@@ -29,6 +29,8 @@ function AppContent() {
         return <OrderTrackingPage onNavigate={() => {}} />
       case 'order-detail':
         return <OrderDetailPage order={null} onNavigate={() => {}} />
+      case 'alcohol-bottles':
+        return <AlcoholBottles />
       case 'alcohol-bottles':
         return <AlcoholBottles />
       default:
