@@ -16,7 +16,8 @@ import {
   CheckCircle,
   MapPin,
   Plane,
-  RotateCcw
+  RotateCcw,
+  Scale
 } from 'lucide-react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SiteHeader } from '@/components/site-header';
@@ -702,6 +703,14 @@ ${JSON.stringify(currentMissing, null, 2)}
     }
   };
 
+  // Función para llevar a báscula
+  const goToScale = () => {
+    console.log('⚖️ Llevando carrito a báscula...');
+    // Aquí puedes agregar la lógica específica para llevar a báscula
+    // Por ejemplo, navegar a una página de báscula o abrir un modal
+    alert('Funcionalidad de báscula en desarrollo. Carrito: ' + cart?.nombre);
+  };
+
   // Función para agregar producto unknown a missing
   const addUnknownToMissing = async () => {
     try {
@@ -836,6 +845,18 @@ ${JSON.stringify(currentMissing, null, 2)}
                 <MapPin className="w-6 h-6 mr-3" />
                 Ver Mapa
               </Button>
+
+              {/* Botón de Llevar a Báscula - Solo para Carrito de Catering con Alcohol */}
+              {cart.nombre === 'Carrito de Catering con Alcohol' && (
+                <Button 
+                  onClick={goToScale}
+                  className="text-lg px-8 py-4 h-auto bg-purple-600 hover:bg-purple-700 text-white"
+                  size="lg"
+                >
+                  <Scale className="w-6 h-6 mr-3" />
+                  Llevar a Báscula
+                </Button>
+              )}
             </div>
           </div>
 
