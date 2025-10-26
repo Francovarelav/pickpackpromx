@@ -129,5 +129,108 @@ npm install
 
 ---
 
+## 🛒 upload-default-cart.mjs
+
+Script para crear un carrito de catering por defecto en Firebase con productos estándar que deben estar siempre disponibles.
+
+### Uso
+
+```bash
+node scripts/upload-default-cart.mjs
+```
+
+### ¿Qué hace?
+
+1. ✅ Crea un carrito de catering estándar en la colección `carts`
+2. ✅ Incluye 13 productos esenciales con cantidades por defecto
+3. ✅ Categoriza productos: bebidas, snacks, lácteos, café y cervezas
+4. ✅ Usa merge para evitar sobrescribir datos existentes
+5. ✅ Muestra un resumen detallado de los productos cargados
+
+### Productos Incluidos
+
+El carrito estándar incluye:
+
+- **Bebidas no alcohólicas** (6 productos):
+  - Coca-Cola Normal (24 unidades)
+  - Coca-Cola Cero (12 unidades)
+  - Sprite Limón (12 unidades)
+  - Agua Ciel (36 unidades)
+  - Jugo Del Valle Naranja (6 unidades)
+  - Jugo Calahua Mango (6 unidades)
+
+- **Café** (1 producto):
+  - Café Punta del Cielo (2 unidades)
+
+- **Lácteos** (1 producto):
+  - Leche Light Lala (4 unidades)
+
+- **Snacks** (2 productos):
+  - Galletas Emperador (12 unidades)
+  - Galletas María (12 unidades)
+
+- **Bebidas alcohólicas** (3 productos):
+  - Cerveza Modelo (12 unidades)
+  - Cerveza Corona (12 unidades)
+  - Cerveza Heineken (8 unidades)
+
+**Total**: 158 unidades distribuidas en 13 productos
+
+### Ejemplo de Salida
+
+```
+🚀 Iniciando carga del carrito por defecto...
+
+📦 Creando carrito: Carrito de Catering Estándar
+   - 13 productos
+   - Descripción: Productos básicos que todo carrito de catering debe contener para un vuelo
+
+✅ Carrito creado exitosamente!
+
+📋 Productos en el carrito:
+────────────────────────────────────────────────────────────────────────────────
+1. Coca-Cola Normal (Coca-Cola)
+   Presentación: 355 ml
+   Cantidad default: 24
+...
+────────────────────────────────────────────────────────────────────────────────
+📊 Total de productos: 13
+📦 Total de unidades: 158
+
+✨ ¡Proceso completado exitosamente!
+```
+
+### Estructura del Carrito en Firebase
+
+```javascript
+{
+  id: "default-catering-cart",
+  nombre: "Carrito de Catering Estándar",
+  descripcion: "Productos básicos que todo carrito de catering debe contener para un vuelo",
+  productos: [
+    {
+      product_id: "coca-cola-normal-355-ml",
+      producto: "Coca-Cola Normal",
+      marca: "Coca-Cola",
+      presentacion: "355 ml",
+      cantidad_default: 24
+    },
+    // ... más productos
+  ],
+  created_at: Date,
+  updated_at: Date
+}
+```
+
+### Visualización en el Dashboard
+
+Los productos del carrito se muestran en la sección "Carrito de Catering" del dashboard:
+- Tabla con información detallada de cada producto
+- Marca, presentación y cantidad por defecto
+- Contador total de productos en el carrito
+- Interfaz responsive y moderna
+
+---
+
 **Creado para PickPackPro MX** 📦
 

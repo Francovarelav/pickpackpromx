@@ -281,7 +281,7 @@ export function AppSidebar({ onNavigate, ...props }: AppSidebarProps) {
       },
       {
         title: "Control Bottles Waste",
-        url: "#",
+        url: "alcohol-bottles",
         icon: IconBottle,
       },
     ],

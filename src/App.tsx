@@ -6,6 +6,7 @@ import PicknPackPage from './pages/PicknPackPage'
 import GenerateOrderPage from './pages/GenerateOrderPage'
 import OrderTrackingPage from './pages/OrderTrackingPage'
 import OrderDetailPage from './pages/OrderDetailPage'
+import AlcoholBottles from './pages/AlcoholBottles'
 import { NavigationProvider, useNavigation } from './contexts/NavigationContext'
 
 function AppContent() {
@@ -25,6 +26,8 @@ function AppContent() {
         return <OrderTrackingPage onNavigate={() => {}} />
       case 'order-detail':
         return <OrderDetailPage order={null} onNavigate={() => {}} />
+      case 'alcohol-bottles':
+        return <AlcoholBottles />
       default:
         return <Dashboard onNavigate={() => {}} />
     }
