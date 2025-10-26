@@ -4,7 +4,10 @@ import Products from './pages/Products'
 import Providers from './pages/Providers'
 import PicknPackPage from './pages/PicknPackPage'
 import GenerateOrderPage from './pages/GenerateOrderPage'
+import OrderTrackingPage from './pages/OrderTrackingPage'
+import OrderDetailPage from './pages/OrderDetailPage'
 import { NavigationProvider, useNavigation } from './contexts/NavigationContext'
+import type { Order } from '@/types/order-types'
 
 function AppContent() {
   const { currentPage } = useNavigation()
@@ -19,6 +22,10 @@ function AppContent() {
         return <PicknPackPage />
       case 'generate-order':
         return <GenerateOrderPage onNavigate={() => {}} />
+      case 'order-tracking':
+        return <OrderTrackingPage onNavigate={() => {}} />
+      case 'order-detail':
+        return <OrderDetailPage order={null} onNavigate={() => {}} />
       default:
         return <Dashboard onNavigate={() => {}} />
     }

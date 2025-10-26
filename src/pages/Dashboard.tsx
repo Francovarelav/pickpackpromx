@@ -11,7 +11,7 @@ import {
 import data from "./data.json"
 
 interface DashboardProps {
-  onNavigate: (page: 'dashboard' | 'generate-order') => void
+  onNavigate: (page: 'dashboard' | 'generate-order' | 'order-tracking' | 'order-detail', order?: any) => void
 }
 
 export default function Page({ onNavigate }: DashboardProps) {
