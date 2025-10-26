@@ -21,6 +21,7 @@ import {
   SidebarInset,
   SidebarProvider,
 } from '@/components/ui/sidebar';
+import { useNavigation } from '../../contexts/NavigationContext';
 
 interface CartProduct {
   product_id: string;
@@ -55,6 +56,7 @@ interface Cart {
 }
 
 export default function MapPage() {
+  const { navigate } = useNavigation();
   const [carts, setCarts] = useState<Cart[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -305,12 +307,11 @@ export default function MapPage() {
                         size="sm" 
                         className="w-full"
                         onClick={() => {
-                          // Aquí puedes agregar navegación a detalles del cart
-                          console.log('Ver detalles del cart:', cart.id);
+                          navigate('cart-map', { cartId: cart.id });
                         }}
                       >
-                        <Eye className="h-4 w-4 mr-2" />
-                        Ver Detalles
+                        <Map className="h-4 w-4 mr-2" />
+                        Ver Mapa
                       </Button>
                     </div>
                   </CardContent>

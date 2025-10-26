@@ -3,6 +3,9 @@ import React, { createContext, useContext, useState, type ReactNode } from 'reac
 interface NavigationContextType {
   currentPage: string;
   setCurrentPage: (page: string) => void;
+  navigationParams: Record<string, any>;
+  setNavigationParams: (params: Record<string, any>) => void;
+  navigate: (page: string, params?: Record<string, any>) => void;
 }
 
 const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
@@ -21,9 +24,25 @@ interface NavigationProviderProps {
 
 export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children }) => {
   const [currentPage, setCurrentPage] = useState('dashboard');
+  const [navigationParams, setNavigationParams] = useState<Record<string, any>>({});
+
+  const navigate = (page: string, params?: Record<string, any>) => {
+    setCurrentPage(page);
+    if (params) {
+      setNavigationParams(params);
+    } else {
+      setNavigationParams({});
+    }
+  };
 
   return (
-    <NavigationContext.Provider value={{ currentPage, setCurrentPage }}>
+    <NavigationContext.Provider value={{ 
+      currentPage, 
+      setCurrentPage, 
+      navigationParams, 
+      setNavigationParams, 
+      navigate 
+    }}>
       {children}
     </NavigationContext.Provider>
   );
