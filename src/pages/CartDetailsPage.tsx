@@ -14,7 +14,8 @@ import {
   MicOff,
   Loader2,
   CheckCircle,
-  MapPin
+  MapPin,
+  Plane
 } from 'lucide-react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SiteHeader } from '@/components/site-header';
@@ -640,8 +641,33 @@ ${JSON.stringify(currentMissing, null, 2)}
     }
   };
 
-  // Función para agregar producto unknown a missing
-  const addUnknownToMissing = async () => {
+  // Función para mandar a vuelo (borrar todos los missing)
+  const sendToFlight = async () => {
+    try {
+      if (!cart) return;
+
+      console.log('✈️ Enviando cart a vuelo - limpiando productos missing...');
+
+      // Actualizar Firebase eliminando todos los missing
+      const cartRef = doc(db, 'carts', cart.id);
+      await updateDoc(cartRef, {
+        missing: [],
+        updated_at: new Date()
+      });
+
+      // Actualizar estado local
+      setCart(prev => prev ? {
+        ...prev,
+        missing: [],
+        updated_at: new Date()
+      } : null);
+
+      console.log('✅ Cart enviado a vuelo - productos missing eliminados');
+
+    } catch (error) {
+      console.error('❌ Error enviando cart a vuelo:', error);
+    }
+  };
     try {
       if (!cart || !selectedCartProduct) return;
       
@@ -907,6 +933,38 @@ ${JSON.stringify(currentMissing, null, 2)}
                     </p>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Botón Mandar a Vuelo */}
+          {cart.missing.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Plane className="h-5 w-5" />
+                  Envío a Vuelo
+                </CardTitle>
+                <CardDescription>
+                  Marca el cart como completado y elimina todos los productos faltantes
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-center">
+                  <Button
+                    onClick={sendToFlight}
+                    className="text-lg px-8 py-4 h-auto bg-orange-600 hover:bg-orange-700 text-white"
+                    size="lg"
+                  >
+                    <Plane className="w-6 h-6 mr-3" />
+                    Mandar a Vuelo
+                  </Button>
+                </div>
+                <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                  <p className="text-sm text-orange-800">
+                    <strong>⚠️ Advertencia:</strong> Esta acción eliminará permanentemente todos los productos faltantes del cart.
+                  </p>
+                </div>
               </CardContent>
             </Card>
           )}
