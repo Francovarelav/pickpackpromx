@@ -84,7 +84,7 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
   const [cart, setCart] = useState<Cart | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [gridSize, setGridSize] = useState({ rows: 5, cols: 13 });
-  const [startPos, setStartPos] = useState({ row: 0, col: 0 });
+  const [startPos] = useState({ row: 19, col: 4 });
   const [products, setProducts] = useState<ShelfProduct[]>([]);
   const [obstacles, setObstacles] = useState<{row: number, col: number}[]>([]);
   const [completedProducts, setCompletedProducts] = useState<string[]>([]);
@@ -125,35 +125,57 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
           const snapshot = await getDocs(shelfStockRef);
           
           if (!snapshot.empty) {
-            const shelfData: any[] = [];
+            const FIREBASE_DATA: any[] = [];
             snapshot.forEach((doc) => {
-              shelfData.push({ id: doc.id, ...doc.data() });
+              FIREBASE_DATA.push({ id: doc.id, ...doc.data() });
             });
 
-            console.log(`✅ ${shelfData.length} shelf products loaded`);
+            console.log(`✅ ${FIREBASE_DATA.length} documentos leídos de Firebase`);
+
+            // Analizar el patrón global del almacén
+            const allY = FIREBASE_DATA.map(item => item.coordenada_y);
+            const allX = FIREBASE_DATA.map(item => item.coordenada_x);
+            const uniqueGlobalY = new Set(allY).size;
+            const uniqueGlobalX = new Set(allX).size;
+            
+            const globalOrientation = uniqueGlobalX > uniqueGlobalY ? 'horizontal' : 'vertical';
+            
+            console.log(`🔍 Análisis global:`);
+            console.log(`   - Columnas únicas (X): ${uniqueGlobalX}`);
+            console.log(`   - Filas únicas (Y): ${uniqueGlobalY}`);
+            console.log(`   - Orientación detectada: ${globalOrientation}`);
+
+            // Agrupar productos por estante
+            const shelfGroups: {[key: string]: any[]} = {};
+            FIREBASE_DATA.forEach(item => {
+              if (!shelfGroups[item.numero_estante]) {
+                shelfGroups[item.numero_estante] = [];
+              }
+              shelfGroups[item.numero_estante].push(item);
+            });
+
+            // Asignar la orientación global a TODOS los estantes
+            const shelfOrientations: {[key: string]: string} = {};
+            Object.keys(shelfGroups).forEach(shelfName => {
+              shelfOrientations[shelfName] = globalOrientation;
+            });
 
             // Calcular tamaño del grid
-            const maxRow = Math.max(...shelfData.map(item => item.coordenada_y), 0);
-            const maxCol = Math.max(...shelfData.map(item => item.coordenada_x), 0);
+            const maxRow = Math.max(...FIREBASE_DATA.map(item => item.coordenada_y), 0);
+            const maxCol = Math.max(...FIREBASE_DATA.map(item => item.coordenada_x), 0);
             const newGridSize = {
               rows: Math.max(maxRow + 3, 6),
               cols: Math.max(maxCol + 3, 14)
             };
             setGridSize(newGridSize);
 
-            // Detectar orientación global
-            const allY = shelfData.map(item => item.coordenada_y);
-            const allX = shelfData.map(item => item.coordenada_x);
-            const uniqueGlobalX = new Set(allX).size;
-            const uniqueGlobalY = new Set(allY).size;
-            const globalOrientation = uniqueGlobalX > uniqueGlobalY ? 'horizontal' : 'vertical';
-
-            // Procesar productos
-            const loadedProducts = shelfData.map((item) => {
+            // Ajustar posiciones de productos
+            const loadedProducts = FIREBASE_DATA.map((item) => {
+              const orientation = shelfOrientations[item.numero_estante];
               let adjustedRow = item.coordenada_y;
               let adjustedCol = item.coordenada_x;
 
-              if (globalOrientation === 'horizontal') {
+              if (orientation === 'horizontal') {
                 if (item.lado === 'A') {
                   adjustedRow = item.coordenada_y - 1;
                 } else if (item.lado === 'B') {
@@ -177,36 +199,31 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
                 estante: item.numero_estante,
                 lado: item.lado,
                 altura: item.altura,
+                baseRow: item.coordenada_y,
+                baseCol: item.coordenada_x,
+                orientation: orientation,
                 product_id: item.product_id
               };
             });
 
             setProducts(loadedProducts);
 
-            // Crear obstáculos (estanterías)
+            // Crear obstáculos
             const obstaclePositions = new Set();
-            shelfData.forEach((item) => {
+            FIREBASE_DATA.forEach((item) => {
               obstaclePositions.add(`${item.coordenada_x},${item.coordenada_y}`);
             });
 
             const loadedObstacles = Array.from(obstaclePositions).map((pos) => {
-              const [col, row] = (pos as string).split(',').map(Number);
+              const [col, row] = pos.split(',').map(Number);
               return { row, col };
             });
 
             setObstacles(loadedObstacles);
-            console.log(`🚧 ${loadedObstacles.length} obstacles created`);
-
-            // Ajustar punto de inicio si está ocupado
-            const startOccupied = loadedProducts.some(p => p.row === 0 && p.col === 0);
-            if (startOccupied) {
-              let freeCol = 0;
-              while (loadedProducts.some(p => p.row === 0 && p.col === freeCol) && freeCol < newGridSize.cols) {
-                freeCol++;
-              }
-              setStartPos({ row: 0, col: freeCol });
-              console.log(`📍 Punto de inicio ajustado a (0, ${freeCol})`);
-            }
+            
+            console.log(`✅ ${loadedProducts.length} productos cargados`);
+            console.log(`🚧 ${loadedObstacles.length} estanterías`);
+            console.log(`📐 Orientación: ${globalOrientation}`);
           }
         } else {
           console.error('❌ Cart not found');
