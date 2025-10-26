@@ -4,16 +4,19 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
+import {
   ArrowLeft,
-  Package, 
-  ShoppingCart, 
-  AlertCircle, 
+  Package,
+  ShoppingCart,
+  AlertCircle,
   Minus,
   Mic,
   MicOff,
   Loader2,
-  CheckCircle
+  CheckCircle,
+  MapPin,
+  Plane,
+  RotateCcw
 } from 'lucide-react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SiteHeader } from '@/components/site-header';
@@ -32,6 +35,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { useNavigation } from '../contexts/NavigationContext';
 
 interface CartProduct {
   product_id: string;
@@ -61,6 +65,7 @@ interface Cart {
   missing: MissingProduct[];
   tipo: string;
   activo: boolean;
+  status?: string;
   created_at: any;
   updated_at: any;
 }
@@ -71,6 +76,7 @@ interface CartDetailsPageProps {
 }
 
 export default function CartDetailsPage({ cartId, onBack }: CartDetailsPageProps) {
+  const { navigate } = useNavigation();
   const [cart, setCart] = useState<Cart | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -111,6 +117,7 @@ export default function CartDetailsPage({ cartId, onBack }: CartDetailsPageProps
             missing: data.missing || [],
             tipo: data.tipo || 'unknown',
             activo: data.activo !== undefined ? data.activo : true,
+            status: data.status || 'limpieza',
             created_at: data.created_at,
             updated_at: data.updated_at
           };
@@ -637,6 +644,64 @@ ${JSON.stringify(currentMissing, null, 2)}
     }
   };
 
+  // Función para mandar a vuelo (borrar todos los missing)
+  const sendToFlight = async () => {
+    try {
+      if (!cart) return;
+
+      console.log('✈️ Enviando cart a vuelo - limpiando productos missing...');
+
+      // Actualizar Firebase eliminando todos los missing y cambiando status
+      const cartRef = doc(db, 'carts', cart.id);
+      await updateDoc(cartRef, {
+        missing: [],
+        status: 'vuelo',
+        updated_at: new Date()
+      });
+
+      // Actualizar estado local
+      setCart(prev => prev ? {
+        ...prev,
+        missing: [],
+        status: 'vuelo',
+        updated_at: new Date()
+      } : null);
+
+      console.log('✅ Cart enviado a vuelo - productos missing eliminados y status cambiado a vuelo');
+
+    } catch (error) {
+      console.error('❌ Error enviando cart a vuelo:', error);
+    }
+  };
+
+  // Función para cambiar status de vuelo a limpieza otravez
+  const resetToCleaning = async () => {
+    try {
+      if (!cart) return;
+
+      console.log('🔄 Cambiando status de vuelo a limpieza otravez...');
+
+      // Actualizar Firebase cambiando status
+      const cartRef = doc(db, 'carts', cart.id);
+      await updateDoc(cartRef, {
+        status: 'limpieza otravez',
+        updated_at: new Date()
+      });
+
+      // Actualizar estado local
+      setCart(prev => prev ? {
+        ...prev,
+        status: 'limpieza otravez',
+        updated_at: new Date()
+      } : null);
+
+      console.log('✅ Status cambiado a limpieza otravez');
+
+    } catch (error) {
+      console.error('❌ Error cambiando status:', error);
+    }
+  };
+
   // Función para agregar producto unknown a missing
   const addUnknownToMissing = async () => {
     try {
@@ -742,7 +807,7 @@ ${JSON.stringify(currentMissing, null, 2)}
                 </p>
               </div>
             </div>
-            <div className="flex justify-center">
+            <div className="flex justify-center gap-4">
               <Button 
                 onClick={isRecording ? stopRecording : startRecording}
                 className={`text-lg px-8 py-4 h-auto ${
@@ -761,6 +826,15 @@ ${JSON.stringify(currentMissing, null, 2)}
                   <Mic className="w-6 h-6 mr-3" />
                 )}
                 {isProcessing ? 'Procesando...' : isRecording ? 'Detener Grabación' : 'Iniciar Cleansing'}
+              </Button>
+              
+              <Button 
+                onClick={() => navigate('cart-map', { cartId: cartId })}
+                className="text-lg px-8 py-4 h-auto bg-blue-600 hover:bg-blue-700 text-white"
+                size="lg"
+              >
+                <MapPin className="w-6 h-6 mr-3" />
+                Ver Mapa
               </Button>
             </div>
           </div>
@@ -895,6 +969,70 @@ ${JSON.stringify(currentMissing, null, 2)}
                     </p>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Botón Mandar a Vuelo */}
+          {cart.missing.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Plane className="h-5 w-5" />
+                  Envío a Vuelo
+                </CardTitle>
+                <CardDescription>
+                  Marca el cart como completado y elimina todos los productos faltantes
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-center">
+                  <Button
+                    onClick={sendToFlight}
+                    className="text-lg px-8 py-4 h-auto bg-orange-600 hover:bg-orange-700 text-white"
+                    size="lg"
+                  >
+                    <Plane className="w-6 h-6 mr-3" />
+                    Mandar a Vuelo
+                  </Button>
+                </div>
+                <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                  <p className="text-sm text-orange-800">
+                    <strong>⚠️ Advertencia:</strong> Esta acción eliminará permanentemente todos los productos faltantes del cart.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Botón para cambiar de vuelo a limpieza otravez */}
+          {cart.status === 'vuelo' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <RotateCcw className="h-5 w-5" />
+                  Reiniciar Limpieza
+                </CardTitle>
+                <CardDescription>
+                  Cambia el status del cart para permitir nueva limpieza
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-center">
+                  <Button
+                    onClick={resetToCleaning}
+                    className="text-lg px-8 py-4 h-auto bg-blue-600 hover:bg-blue-700 text-white"
+                    size="lg"
+                  >
+                    <RotateCcw className="w-6 h-6 mr-3" />
+                    Limpieza Otravez
+                  </Button>
+                </div>
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>ℹ️ Información:</strong> Este botón cambia el status del cart de "vuelo" a "limpieza otravez" para permitir una nueva limpieza.
+                  </p>
+                </div>
               </CardContent>
             </Card>
           )}
