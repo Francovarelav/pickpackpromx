@@ -180,6 +180,7 @@ export default function CartDetailsPage({ cartId, onBack }: CartDetailsPageProps
       setUnknownProducts([]);
       setSelectedCartProduct(null);
       setUnknownQuantity(1);
+      setShowUnknownDialog(false); // Asegurar que el diálogo esté cerrado
 
       // Crear instancia de reconocimiento de voz
       const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
@@ -315,8 +316,17 @@ ${JSON.stringify(productList, null, 2)}
       
       // Manejar productos unknown
       if (jsonResult.unknown && jsonResult.unknown.length > 0) {
+        console.log('🔍 Productos unknown detectados:', jsonResult.unknown);
+        // Limpiar completamente el estado anterior del diálogo
+        setSelectedCartProduct(null);
+        setUnknownQuantity(1);
+        // Establecer nuevos productos unknown
         setUnknownProducts(jsonResult.unknown);
         setShowUnknownDialog(true);
+      } else {
+        console.log('✅ No hay productos unknown en esta sesión');
+        // Asegurar que el diálogo esté cerrado si no hay unknown products
+        setShowUnknownDialog(false);
       }
       
     } catch (error) {
@@ -751,13 +761,17 @@ ${JSON.stringify(productList, null, 2)}
               </Button>
               <Button 
                 onClick={() => {
+                  // Cerrar diálogo y limpiar completamente
                   setShowUnknownDialog(false);
                   setUnknownProducts([]);
                   setSelectedCartProduct(null);
-                  // Reiniciar grabación
+                  setUnknownQuantity(1);
+                  
+                  // Esperar un poco para que el diálogo se cierre completamente
                   setTimeout(() => {
+                    console.log('🔄 Iniciando nueva grabación después de limpiar diálogo...');
                     startRecording();
-                  }, 500);
+                  }, 1000);
                 }}
               >
                 Repetir Grabación
