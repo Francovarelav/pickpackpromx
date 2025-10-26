@@ -3,6 +3,7 @@ import Dashboard from './pages/Dashboard'
 import Products from './pages/Products'
 import Providers from './pages/Providers'
 import GenerateOrderPage from './pages/GenerateOrderPage'
+import AlcoholBottles from './pages/AlcoholBottles'
 import { NavigationProvider, useNavigation } from './contexts/NavigationContext'
 
 function AppContent() {
@@ -16,6 +17,8 @@ function AppContent() {
         return <Providers />
       case 'generate-order':
         return <GenerateOrderPage onNavigate={() => {}} />
+      case 'alcohol-bottles':
+        return <AlcoholBottles />
       default:
         return <Dashboard onNavigate={() => {}} />
     }
