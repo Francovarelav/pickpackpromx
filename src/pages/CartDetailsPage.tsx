@@ -171,9 +171,15 @@ export default function CartDetailsPage({ cartId, onBack }: CartDetailsPageProps
         throw new Error('Este navegador no soporta reconocimiento de voz');
       }
 
-      // Limpiar resultados anteriores
+      // Limpiar completamente todos los estados anteriores
       setCurrentTranscript('');
+      setIsProcessing(false);
       setIsRecording(true);
+      
+      // Limpiar productos unknown del diálogo anterior
+      setUnknownProducts([]);
+      setSelectedCartProduct(null);
+      setUnknownQuantity(1);
 
       // Crear instancia de reconocimiento de voz
       const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
@@ -228,7 +234,7 @@ export default function CartDetailsPage({ cartId, onBack }: CartDetailsPageProps
 
       recognitionInstance.start();
       setRecognition(recognitionInstance);
-      
+
     } catch (error) {
       console.error('❌ Error iniciando reconocimiento:', error);
       setIsRecording(false);
@@ -334,37 +340,50 @@ ${JSON.stringify(productList, null, 2)}
         cantidad_default: p.cantidad_default 
       })));
       
-      const missingProducts: MissingProduct[] = [];
+      // Obtener productos missing actuales
+      const currentMissing = cart.missing || [];
+      console.log('📋 Missing products actuales:', currentMissing);
       
-      // Para cada producto del cart, verificar si fue detectado por Gemini
-      cart.productos.forEach(cartProduct => {
-        console.log(`\n🔍 Procesando: ${cartProduct.producto} (ID: ${cartProduct.product_id}, Default: ${cartProduct.cantidad_default})`);
+      const missingProducts: MissingProduct[] = [...currentMissing];
+      
+      // Para cada producto detectado por Gemini, actualizar los missing existentes
+      detectedProducts.forEach(detectedProduct => {
+        const cartProduct = cart.productos.find(p => p.product_id === detectedProduct.product_id);
+        if (!cartProduct) return;
         
-        const detectedProduct = detectedProducts.find(detected => 
-          detected.product_id === cartProduct.product_id
-        );
+        console.log(`\n🔍 Procesando producto detectado: ${cartProduct.producto} (${detectedProduct.quantity_mentioned} unidades)`);
         
-        if (!detectedProduct) {
-          // Producto no detectado por Gemini - va completo a missing
-          const missingEntry = {
-            cantidad_missing: cartProduct.cantidad_default,
-            marca: cartProduct.marca,
-            presentacion: cartProduct.presentacion,
-            product_id: cartProduct.product_id,
-            producto: cartProduct.producto,
-            stock_found: 0
-          };
-          missingProducts.push(missingEntry);
-          console.log(`❌ NO detectado: ${cartProduct.producto} - ${cartProduct.cantidad_default} unidades faltantes`);
-        } else {
-          // Producto detectado - calcular diferencia
+        // Buscar si ya existe en missing
+        const existingMissingIndex = missingProducts.findIndex(m => m.product_id === detectedProduct.product_id);
+        
+        if (existingMissingIndex >= 0) {
+          // Ya existe en missing - actualizar cantidad
+          const existingMissing = missingProducts[existingMissingIndex];
           const cantidadDetectada = detectedProduct.quantity_mentioned || 0;
           const cantidadDefault = cartProduct.cantidad_default;
           
-          console.log(`✅ Detectado: ${cantidadDetectada} unidades de ${cantidadDefault} requeridas`);
+          console.log(`📝 Actualizando missing existente: ${existingMissing.cantidad_missing} -> ${cantidadDefault - cantidadDetectada}`);
+          
+          if (cantidadDetectada >= cantidadDefault) {
+            // Ya no falta - remover de missing
+            missingProducts.splice(existingMissingIndex, 1);
+            console.log(`✅ Producto completamente cubierto: ${cartProduct.producto} - Removido de missing`);
+          } else {
+            // Actualizar cantidad faltante
+            const cantidadFaltante = cantidadDefault - cantidadDetectada;
+            missingProducts[existingMissingIndex] = {
+              ...existingMissing,
+              cantidad_missing: cantidadFaltante,
+              stock_found: cantidadDetectada
+            };
+            console.log(`⚠️ Actualizado: ${cartProduct.producto} - ${cantidadFaltante} unidades faltantes`);
+          }
+        } else {
+          // No existe en missing - agregar si falta
+          const cantidadDetectada = detectedProduct.quantity_mentioned || 0;
+          const cantidadDefault = cartProduct.cantidad_default;
           
           if (cantidadDetectada < cantidadDefault) {
-            // Faltan unidades - agregar la diferencia a missing
             const cantidadFaltante = cantidadDefault - cantidadDetectada;
             const missingEntry = {
               cantidad_missing: cantidadFaltante,
@@ -375,9 +394,9 @@ ${JSON.stringify(productList, null, 2)}
               stock_found: cantidadDetectada
             };
             missingProducts.push(missingEntry);
-            console.log(`⚠️ Faltan unidades: ${cartProduct.producto} - ${cantidadFaltante} unidades faltantes`);
+            console.log(`➕ Nuevo missing: ${cartProduct.producto} - ${cantidadFaltante} unidades faltantes`);
           } else {
-            console.log(`✅ Completamente cubierto: ${cartProduct.producto}`);
+            console.log(`✅ Producto completamente cubierto: ${cartProduct.producto}`);
           }
         }
       });
