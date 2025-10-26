@@ -1,24 +1,19 @@
 import { useState, useEffect } from 'react';
 import { db } from '../../firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
   ArrowLeft,
   Package, 
-  Calendar, 
   ShoppingCart, 
-  CheckCircle, 
   AlertCircle, 
-  Plus,
   Minus,
-  Edit,
-  Save,
-  X,
   Mic,
   MicOff,
-  Loader2
+  Loader2,
+  CheckCircle
 } from 'lucide-react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SiteHeader } from '@/components/site-header';
@@ -27,8 +22,15 @@ import {
   SidebarProvider,
 } from '@/components/ui/sidebar';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 
 interface CartProduct {
   product_id: string;
@@ -61,20 +63,18 @@ interface CartDetailsPageProps {
 export default function CartDetailsPage({ cartId, onBack }: CartDetailsPageProps) {
   const [cart, setCart] = useState<Cart | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editData, setEditData] = useState({
-    nombre: '',
-    descripcion: '',
-    missing: [] as string[]
-  });
 
   // Estados para cleansing
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [transcript, setTranscript] = useState('');
-  const [cleansingResult, setCleansingResult] = useState<any>(null);
   const [recognition, setRecognition] = useState<any>(null);
   const [currentTranscript, setCurrentTranscript] = useState(''); // Transcript temporal
+  
+  // Estados para manejo de productos unknown
+  const [unknownProducts, setUnknownProducts] = useState<string[]>([]);
+  const [showUnknownDialog, setShowUnknownDialog] = useState(false);
+  const [selectedUnknownProduct, setSelectedUnknownProduct] = useState<string>('');
+  const [unknownQuantity, setUnknownQuantity] = useState<number>(1);
 
   // Cargar cart desde Firebase
   useEffect(() => {
@@ -100,11 +100,6 @@ export default function CartDetailsPage({ cartId, onBack }: CartDetailsPageProps
           };
           
           setCart(cartData);
-          setEditData({
-            nombre: cartData.nombre,
-            descripcion: cartData.descripcion,
-            missing: [...cartData.missing]
-          });
           
           console.log('✅ Cart loaded:', cartData.nombre);
         } else {
@@ -152,97 +147,9 @@ export default function CartDetailsPage({ cartId, onBack }: CartDetailsPageProps
     }
   };
 
-  // Función para formatear fecha
-  const formatDate = (timestamp: any) => {
-    if (!timestamp) return 'N/A';
-    
-    let date;
-    if (timestamp.seconds) {
-      date = new Date(timestamp.seconds * 1000);
-    } else if (timestamp instanceof Date) {
-      date = timestamp;
-    } else {
-      date = new Date(timestamp);
-    }
-    
-    return date.toLocaleDateString('es-MX', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
-  // Función para formatear moneda
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN'
-    }).format(amount);
-  };
 
-  // Calcular total estimado del cart
-  const calculateCartTotal = (productos: CartProduct[]) => {
-    return productos.reduce((total, producto) => {
-      return total + (producto.precio_unitario * producto.cantidad_default);
-    }, 0);
-  };
 
-  // Función para agregar producto faltante
-  const addMissingProduct = () => {
-    const newMissing = prompt('Ingresa el nombre del producto faltante:');
-    if (newMissing && newMissing.trim()) {
-      setEditData(prev => ({
-        ...prev,
-        missing: [...prev.missing, newMissing.trim()]
-      }));
-    }
-  };
-
-  // Función para eliminar producto faltante
-  const removeMissingProduct = (index: number) => {
-    setEditData(prev => ({
-      ...prev,
-      missing: prev.missing.filter((_, i) => i !== index)
-    }));
-  };
-
-  // Función para guardar cambios
-  const saveChanges = async () => {
-    try {
-      // Aquí implementarías la lógica para guardar en Firebase
-      console.log('💾 Guardando cambios...', editData);
-      
-      // Por ahora solo actualizamos el estado local
-      if (cart) {
-        setCart({
-          ...cart,
-          nombre: editData.nombre,
-          descripcion: editData.descripcion,
-          missing: editData.missing,
-          updated_at: new Date()
-        });
-      }
-      
-      setIsEditing(false);
-      console.log('✅ Cambios guardados');
-    } catch (error) {
-      console.error('❌ Error guardando cambios:', error);
-    }
-  };
-
-  // Función para cancelar edición
-  const cancelEdit = () => {
-    if (cart) {
-      setEditData({
-        nombre: cart.nombre,
-        descripcion: cart.descripcion,
-        missing: [...cart.missing]
-      });
-    }
-    setIsEditing(false);
-  };
 
   // Funciones para cleansing
   const startRecording = async () => {
@@ -255,9 +162,7 @@ export default function CartDetailsPage({ cartId, onBack }: CartDetailsPageProps
       }
 
       // Limpiar resultados anteriores
-      setTranscript('');
       setCurrentTranscript('');
-      setCleansingResult(null);
       setIsRecording(true);
 
       // Crear instancia de reconocimiento de voz
@@ -283,7 +188,6 @@ export default function CartDetailsPage({ cartId, onBack }: CartDetailsPageProps
         
         console.log('📝 Transcript completo:', fullTranscript);
         setCurrentTranscript(fullTranscript);
-        setTranscript(fullTranscript);
         
         // Si el reconocimiento ya terminó, procesar inmediatamente
         if (!isRecording) {
@@ -295,9 +199,6 @@ export default function CartDetailsPage({ cartId, onBack }: CartDetailsPageProps
 
       recognitionInstance.onerror = (event: any) => {
         console.error('❌ Error en reconocimiento:', event.error);
-        setCleansingResult({ 
-          error: `Error en reconocimiento de voz: ${event.error}` 
-        });
         setIsRecording(false);
       };
 
@@ -320,9 +221,6 @@ export default function CartDetailsPage({ cartId, onBack }: CartDetailsPageProps
       
     } catch (error) {
       console.error('❌ Error iniciando reconocimiento:', error);
-      setCleansingResult({ 
-        error: 'No se pudo iniciar el reconocimiento de voz. Verifica los permisos.' 
-      });
       setIsRecording(false);
     }
   };
@@ -393,15 +291,90 @@ ${JSON.stringify(productList, null, 2)}
       
       const jsonResult = JSON.parse(cleanText);
       console.log('✅ JSON parseado:', jsonResult);
-      setCleansingResult(jsonResult);
+      
+      // Procesar productos detectados
+      if (jsonResult.products && jsonResult.products.length > 0) {
+        await updateMissingProducts(jsonResult.products);
+      }
+      
+      // Manejar productos unknown
+      if (jsonResult.unknown && jsonResult.unknown.length > 0) {
+        setUnknownProducts(jsonResult.unknown);
+        setShowUnknownDialog(true);
+      }
+      
     } catch (error) {
       console.error('❌ Error con Gemini:', error);
-      setCleansingResult({ 
-        error: 'Error procesando con Gemini API',
-        details: error
-      });
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  // Función para actualizar productos missing en Firebase
+  const updateMissingProducts = async (detectedProducts: any[]) => {
+    try {
+      console.log('🔄 Actualizando productos missing en Firebase...');
+      
+      if (!cart) return;
+      
+      // Crear lista de productos faltantes basada en los detectados
+      const missingProductNames = detectedProducts.map(product => {
+        const cartProduct = cart.productos.find(p => p.product_id === product.product_id);
+        return cartProduct ? `${cartProduct.producto} (${cartProduct.marca}) - ${product.quantity_mentioned} unidades` : '';
+      }).filter(name => name !== '');
+      
+      // Actualizar el cart en Firebase
+      const cartRef = doc(db, 'carts', cart.id);
+      await updateDoc(cartRef, {
+        missing: missingProductNames,
+        updated_at: new Date()
+      });
+      
+      // Actualizar el estado local
+      setCart(prev => prev ? {
+        ...prev,
+        missing: missingProductNames,
+        updated_at: new Date()
+      } : null);
+      
+      console.log('✅ Productos missing actualizados:', missingProductNames);
+      
+    } catch (error) {
+      console.error('❌ Error actualizando missing products:', error);
+    }
+  };
+
+  // Función para agregar producto unknown a missing
+  const addUnknownToMissing = async () => {
+    try {
+      if (!cart || !selectedUnknownProduct) return;
+      
+      const productToAdd = `${selectedUnknownProduct} - ${unknownQuantity} unidades`;
+      
+      // Actualizar Firebase
+      const cartRef = doc(db, 'carts', cart.id);
+      const updatedMissing = [...cart.missing, productToAdd];
+      
+      await updateDoc(cartRef, {
+        missing: updatedMissing,
+        updated_at: new Date()
+      });
+      
+      // Actualizar estado local
+      setCart(prev => prev ? {
+        ...prev,
+        missing: updatedMissing,
+        updated_at: new Date()
+      } : null);
+      
+      // Limpiar formulario
+      setSelectedUnknownProduct('');
+      setUnknownQuantity(1);
+      
+      console.log('✅ Producto unknown agregado:', productToAdd);
+      
+    } catch (error) {
+      console.error('❌ Error agregando producto unknown:', error);
     }
   };
 
@@ -462,61 +435,39 @@ ${JSON.stringify(productList, null, 2)}
               </Button>
               <div>
                 <h1 className="text-3xl font-bold tracking-tight">
-                  {isEditing ? (
-                    <Input
-                      value={editData.nombre}
-                      onChange={(e) => setEditData(prev => ({ ...prev, nombre: e.target.value }))}
-                      className="text-3xl font-bold border-none p-0 h-auto"
-                    />
-                  ) : (
-                    cart.nombre
-                  )}
+                  {cart.nombre}
                 </h1>
                 <p className="text-muted-foreground">
                   Detalles completos del carrito de catering
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              {isEditing ? (
-                <>
-                  <Button onClick={saveChanges}>
-                    <Save className="w-4 h-4 mr-2" />
-                    Guardar
-                  </Button>
-                  <Button variant="outline" onClick={cancelEdit}>
-                    <X className="w-4 h-4 mr-2" />
-                    Cancelar
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button onClick={() => setIsEditing(true)}>
-                    <Edit className="w-4 h-4 mr-2" />
-                    Editar
-                  </Button>
-                  <Button 
-                    onClick={isRecording ? stopRecording : startRecording}
-                    variant={isRecording ? "destructive" : "default"}
-                    disabled={isProcessing}
-                  >
-                    {isProcessing ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : isRecording ? (
-                      <MicOff className="w-4 h-4 mr-2" />
-                    ) : (
-                      <Mic className="w-4 h-4 mr-2" />
-                    )}
-                    {isProcessing ? 'Procesando...' : isRecording ? 'Detener Grabación' : 'Iniciar Cleansing'}
-                  </Button>
-                </>
-              )}
+            <div className="flex justify-center">
+              <Button 
+                onClick={isRecording ? stopRecording : startRecording}
+                className={`text-lg px-8 py-4 h-auto ${
+                  isRecording 
+                    ? 'bg-red-600 hover:bg-red-700 text-white' 
+                    : 'bg-green-600 hover:bg-green-700 text-white'
+                }`}
+                disabled={isProcessing}
+                size="lg"
+              >
+                {isProcessing ? (
+                  <Loader2 className="w-6 h-6 mr-3 animate-spin" />
+                ) : isRecording ? (
+                  <MicOff className="w-6 h-6 mr-3" />
+                ) : (
+                  <Mic className="w-6 h-6 mr-3" />
+                )}
+                {isProcessing ? 'Procesando...' : isRecording ? 'Detener Grabación' : 'Iniciar Cleansing'}
+              </Button>
             </div>
           </div>
 
-          {/* Información General */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
+          {/* Información General Simplificada */}
+          <div className="flex justify-center">
+            <Card className="w-fit">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Tipo de Cart</CardTitle>
                 <ShoppingCart className="h-4 w-4 text-muted-foreground" />
@@ -528,26 +479,6 @@ ${JSON.stringify(productList, null, 2)}
                 </Badge>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Productos</CardTitle>
-                <Package className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{cart.total_productos}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Valor Estimado</CardTitle>
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {formatCurrency(calculateCartTotal(cart.productos))}
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Descripción */}
@@ -556,16 +487,7 @@ ${JSON.stringify(productList, null, 2)}
               <CardTitle>Descripción</CardTitle>
             </CardHeader>
             <CardContent>
-              {isEditing ? (
-                <Textarea
-                  value={editData.descripcion}
-                  onChange={(e) => setEditData(prev => ({ ...prev, descripcion: e.target.value }))}
-                  placeholder="Descripción del cart..."
-                  className="min-h-[100px]"
-                />
-              ) : (
-                <p className="text-muted-foreground">{cart.descripcion}</p>
-              )}
+              <p className="text-muted-foreground">{cart.descripcion}</p>
             </CardContent>
           </Card>
 
@@ -589,12 +511,6 @@ ${JSON.stringify(productList, null, 2)}
                     </div>
                     <div className="text-right">
                       <p className="font-semibold">{producto.cantidad_default} unidades</p>
-                      <p className="text-sm text-muted-foreground">
-                        {formatCurrency(producto.precio_unitario)} c/u
-                      </p>
-                      <p className="text-sm font-medium text-green-600">
-                        Total: {formatCurrency(producto.precio_unitario * producto.cantidad_default)}
-                      </p>
                     </div>
                   </div>
                 ))}
@@ -605,20 +521,10 @@ ${JSON.stringify(productList, null, 2)}
           {/* Productos Faltantes */}
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Productos Faltantes</CardTitle>
-                  <CardDescription>
-                    Productos que están marcados como faltantes o no disponibles
-                  </CardDescription>
-                </div>
-                {isEditing && (
-                  <Button onClick={addMissingProduct} size="sm">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Agregar
-                  </Button>
-                )}
-              </div>
+              <CardTitle>Productos Faltantes</CardTitle>
+              <CardDescription>
+                Productos que están marcados como faltantes o no disponibles
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {cart.missing.length === 0 ? (
@@ -635,16 +541,6 @@ ${JSON.stringify(productList, null, 2)}
                         <AlertCircle className="h-4 w-4 text-red-500" />
                         <span className="text-red-800 font-medium">{missing}</span>
                       </div>
-                      {isEditing && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeMissingProduct(index)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -652,80 +548,118 @@ ${JSON.stringify(productList, null, 2)}
             </CardContent>
           </Card>
 
-          {/* Sección de Cleansing */}
-          {(transcript || cleansingResult) && (
-            <div className="space-y-4">
-              {/* Transcript */}
-              {transcript && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Mic className="h-5 w-5" />
-                      Transcript del Audio
-                    </CardTitle>
-                    <CardDescription>
-                      Texto reconocido del audio grabado
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="bg-gray-50 border rounded-md p-4">
-                      <p className="text-lg font-medium">"{transcript}"</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
 
-              {/* Resultado del Cleansing */}
-              {cleansingResult && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <CheckCircle className="h-5 w-5" />
-                      Resultado del Cleansing
-                    </CardTitle>
-                    <CardDescription>
-                      Análisis procesado por Gemini AI
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="bg-gray-50 border rounded-md p-4">
-                      <pre className="text-sm font-mono whitespace-pre-wrap overflow-x-auto">
-                        {JSON.stringify(cleansingResult, null, 2)}
-                      </pre>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          )}
-
-          {/* Información de Fechas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Fecha de Creación
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-lg font-medium">{formatDate(cart.created_at)}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Última Actualización
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-lg font-medium">{formatDate(cart.updated_at)}</p>
-              </CardContent>
-            </Card>
-          </div>
         </div>
       </SidebarInset>
+      
+      {/* Diálogo para productos unknown */}
+      <Dialog open={showUnknownDialog} onOpenChange={setShowUnknownDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Productos No Reconocidos</DialogTitle>
+            <DialogDescription>
+              Los siguientes productos no pudieron ser identificados automáticamente. 
+              Puedes agregarlos manualmente a la lista de faltantes.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Lista de productos unknown */}
+            <div>
+              <Label className="text-sm font-medium">Productos detectados:</Label>
+              <div className="mt-2 space-y-2">
+                {unknownProducts.map((product, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <span className="text-yellow-800 font-medium">{product}</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedUnknownProduct(product);
+                        setUnknownQuantity(1);
+                      }}
+                    >
+                      Seleccionar
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Formulario para agregar producto */}
+            {selectedUnknownProduct && (
+              <div className="border-t pt-4">
+                <Label className="text-sm font-medium">Agregar a faltantes:</Label>
+                <div className="mt-2 space-y-4">
+                  <div>
+                    <Label htmlFor="product-name">Producto:</Label>
+                    <Input
+                      id="product-name"
+                      value={selectedUnknownProduct}
+                      onChange={(e) => setSelectedUnknownProduct(e.target.value)}
+                      placeholder="Nombre del producto"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="quantity">Cantidad:</Label>
+                    <Input
+                      id="quantity"
+                      type="number"
+                      min="1"
+                      value={unknownQuantity}
+                      onChange={(e) => setUnknownQuantity(parseInt(e.target.value) || 1)}
+                      placeholder="Cantidad"
+                    />
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button onClick={addUnknownToMissing}>
+                      Agregar a Faltantes
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setSelectedUnknownProduct('');
+                        setUnknownQuantity(1);
+                      }}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Botones de acción */}
+            <div className="flex justify-between pt-4 border-t">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowUnknownDialog(false);
+                  setUnknownProducts([]);
+                  setSelectedUnknownProduct('');
+                }}
+              >
+                Cerrar
+              </Button>
+              <Button 
+                onClick={() => {
+                  setShowUnknownDialog(false);
+                  setUnknownProducts([]);
+                  setSelectedUnknownProduct('');
+                  // Reiniciar grabación
+                  setTimeout(() => {
+                    startRecording();
+                  }, 500);
+                }}
+              >
+                Repetir Grabación
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
   );
 }
