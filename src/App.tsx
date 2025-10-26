@@ -3,6 +3,7 @@ import Dashboard from './pages/Dashboard'
 import Products from './pages/Products'
 import Providers from './pages/Providers'
 import PicknPackPage from './pages/PicknPackPage'
+import MapPage from './pages/MapPage'
 import GenerateOrderPage from './pages/GenerateOrderPage'
 import OrderTrackingPage from './pages/OrderTrackingPage'
 import OrderDetailPage from './pages/OrderDetailPage'
@@ -20,6 +21,8 @@ function AppContent() {
         return <Providers />
       case 'orders':
         return <PicknPackPage />
+      case 'map':
+        return <MapPage />
       case 'generate-order':
         return <GenerateOrderPage onNavigate={() => {}} />
       case 'order-tracking':

@@ -19,6 +19,7 @@ import {
   IconChartLine,
   IconUserCheck,
   IconBottle,
+  IconMap,
 } from "@tabler/icons-react"
 
 import { NavDocuments } from "@/components/nav-documents"
@@ -65,6 +66,11 @@ export function AppSidebar({ onNavigate, ...props }: AppSidebarProps) {
         title: "Pick & Pack",
         url: "orders",
         icon: IconListDetails,
+      },
+      {
+        title: "Map",
+        url: "map",
+        icon: IconMap,
       },
       {
         title: "Generate order",
