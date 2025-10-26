@@ -215,7 +215,7 @@ export default function GenerateOrderPage({ onNavigate }: GenerateOrderPageProps
           } as React.CSSProperties
         }
       >
-        <AppSidebar variant="inset" onNavigate={onNavigate} />
+        <AppSidebar variant="inset" />
         <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">

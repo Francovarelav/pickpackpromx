@@ -1,13 +1,17 @@
 import './App.css'
+import { useState } from 'react'
 import Dashboard from './pages/Dashboard'
 import Products from './pages/Products'
 import Providers from './pages/Providers'
 import PicknPackPage from './pages/PicknPackPage'
 import GenerateOrderPage from './pages/GenerateOrderPage'
+import Airlines from './pages/Airlines'
+import Employees from './pages/Employees'
 import OrderTrackingPage from './pages/OrderTrackingPage'
 import OrderDetailPage from './pages/OrderDetailPage'
 import { NavigationProvider, useNavigation } from './contexts/NavigationContext'
 import type { Order } from '@/types/order-types'
+import { NavigationProvider, useNavigation } from './contexts/NavigationContext'
 
 function AppContent() {
   const { currentPage } = useNavigation()
