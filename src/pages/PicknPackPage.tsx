@@ -39,6 +39,8 @@ interface CartProduct {
   stock_actual: number;
 }
 
+type CartStatus = 'Limpieza' | 'Pesaje' | 'Pick and pack' | 'Avión';
+
 interface Cart {
   id: string;
   nombre: string;
@@ -48,6 +50,7 @@ interface Cart {
   missing: string[];
   tipo: string;
   activo: boolean;
+  status?: CartStatus;
   created_at: any;
   updated_at: any;
 }
@@ -91,6 +94,7 @@ export default function PicknPackPage() {
             missing: data.missing || [],
             tipo: data.tipo || 'unknown',
             activo: data.activo !== undefined ? data.activo : true,
+            status: data.status || 'Limpieza',
             created_at: data.created_at,
             updated_at: data.updated_at
           });
@@ -130,35 +134,35 @@ export default function PicknPackPage() {
     setFilteredCarts(filtered);
   }, [carts, searchTerm, typeFilter]);
 
-  // Función para obtener el color del badge según el tipo
-  const getTypeColor = (tipo: string) => {
-    switch (tipo.toLowerCase()) {
-      case 'default-catering':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'premium':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'básico':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'mini':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+  // Función para obtener el color del badge según el status
+  const getStatusColor = (status?: CartStatus) => {
+    switch (status) {
+      case 'Limpieza':
+        return 'bg-blue-600 hover:bg-blue-700 text-white';
+      case 'Pesaje':
+        return 'bg-orange-600 hover:bg-orange-700 text-white';
+      case 'Pick and pack':
+        return 'bg-purple-600 hover:bg-purple-700 text-white';
+      case 'Avión':
+        return 'bg-green-600 hover:bg-green-700 text-white';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-gray-600 hover:bg-gray-700 text-white';
     }
   };
 
-  // Función para obtener el ícono según el tipo
-  const getTypeIcon = (tipo: string) => {
-    switch (tipo.toLowerCase()) {
-      case 'default-catering':
-        return <ShoppingCart className="w-4 h-4" />;
-      case 'premium':
-        return <Package className="w-4 h-4" />;
-      case 'básico':
-        return <CheckCircle className="w-4 h-4" />;
-      case 'mini':
-        return <Minus className="w-4 h-4" />;
+  // Función para obtener el ícono según el status
+  const getStatusIcon = (status?: CartStatus) => {
+    switch (status) {
+      case 'Limpieza':
+        return '🧹';
+      case 'Pesaje':
+        return '⚖️';
+      case 'Pick and pack':
+        return '📦';
+      case 'Avión':
+        return '✈️';
       default:
-        return <Package className="w-4 h-4" />;
+        return '📋';
     }
   };
 
@@ -357,9 +361,8 @@ export default function PicknPackPage() {
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg">{cart.nombre}</CardTitle>
-                      <Badge className={`${getTypeColor(cart.tipo)} flex items-center gap-1`}>
-                        {getTypeIcon(cart.tipo)}
-                        {cart.tipo}
+                      <Badge className={`${getStatusColor(cart.status)} font-semibold`}>
+                        {getStatusIcon(cart.status)} {cart.status}
                       </Badge>
                     </div>
                     <CardDescription className="flex items-center gap-2">
@@ -403,7 +406,7 @@ export default function PicknPackPage() {
                     <thead className="border-b">
                       <tr className="text-left">
                         <th className="p-4 font-medium">Cart</th>
-                        <th className="p-4 font-medium">Tipo</th>
+                        <th className="p-4 font-medium">Estado</th>
                         <th className="p-4 font-medium">Productos</th>
                         <th className="p-4 font-medium">Valor</th>
                         <th className="p-4 font-medium">Faltantes</th>
@@ -419,9 +422,8 @@ export default function PicknPackPage() {
                             <div className="text-sm text-muted-foreground">{cart.descripcion}</div>
                           </td>
                           <td className="p-4">
-                            <Badge className={`${getTypeColor(cart.tipo)} flex items-center gap-1 w-fit`}>
-                              {getTypeIcon(cart.tipo)}
-                              {cart.tipo}
+                            <Badge className={`${getStatusColor(cart.status)} font-semibold`}>
+                              {getStatusIcon(cart.status)} {cart.status}
                             </Badge>
                           </td>
                           <td className="p-4 font-semibold">{cart.total_productos}</td>

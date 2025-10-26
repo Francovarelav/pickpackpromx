@@ -9,7 +9,6 @@ import Employees from './pages/Employees'
 import OrderTrackingPage from './pages/OrderTrackingPage'
 import OrderDetailPage from './pages/OrderDetailPage'
 import AlcoholBottles from './pages/AlcoholBottles'
-import AlcoholBottles from './pages/AlcoholBottles'
 import { NavigationProvider, useNavigation } from './contexts/NavigationContext'
 
 function AppContent() {
