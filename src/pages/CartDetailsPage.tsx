@@ -668,6 +668,9 @@ ${JSON.stringify(currentMissing, null, 2)}
       console.error('❌ Error enviando cart a vuelo:', error);
     }
   };
+
+  // Función para agregar producto unknown a missing
+  const addUnknownToMissing = async () => {
     try {
       if (!cart || !selectedCartProduct) return;
       
