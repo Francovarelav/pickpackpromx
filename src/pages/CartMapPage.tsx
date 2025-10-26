@@ -9,7 +9,8 @@ import {
   Package,
   Navigation,
   CheckCircle,
-  Loader2
+  Loader2,
+  Plane
 } from 'lucide-react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SiteHeader } from '@/components/site-header';
@@ -435,6 +436,38 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
     }
   };
 
+  // Función para mandar a avión (limpiar missing del cart)
+  const sendToPlane = async () => {
+    try {
+      if (!cart) return;
+
+      console.log('✈️ Enviando cart a avión - limpiando productos missing...');
+
+      // Actualizar Firebase eliminando todos los missing
+      const cartRef = doc(db, 'carts', cart.id);
+      await updateDoc(cartRef, {
+        missing: [],
+        updated_at: new Date()
+      });
+
+      // Actualizar estado local
+      setCart(prev => prev ? {
+        ...prev,
+        missing: []
+      } : null);
+
+      // Limpiar productos completados también
+      setCompletedProducts([]);
+      setSelectedProducts([]);
+      setOptimalPath(null);
+
+      console.log('✅ Cart enviado a avión - productos missing eliminados');
+
+    } catch (error) {
+      console.error('❌ Error enviando cart a avión:', error);
+    }
+  };
+
   if (isLoading) {
     return (
       <SidebarProvider>
@@ -553,6 +586,23 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
                       );
                     })}
                   </div>
+                  
+                  {/* Botón Mandar a Avión */}
+                  {cart.missing.length > 0 && (
+                    <div className="mt-6 pt-4 border-t border-slate-200">
+                      <Button
+                        onClick={sendToPlane}
+                        className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                        size="lg"
+                      >
+                        <Plane className="w-5 h-5 mr-2" />
+                        Mandar a Avión
+                      </Button>
+                      <p className="text-xs text-slate-500 mt-2 text-center">
+                        Elimina todos los productos faltantes del cart
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
