@@ -20,6 +20,8 @@ import {
   IconChartLine,
   IconUserCheck,
   IconBottle,
+  IconBuildingStore,
+  IconPlane,
 } from "@tabler/icons-react"
 
 import { NavDocuments } from "@/components/nav-documents"
@@ -35,7 +37,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-
+interface AppSidebarProps {
+  onNavigate?: (page: string) => void;
+}
 const data = {
   user: {
     name: "shadcn",
