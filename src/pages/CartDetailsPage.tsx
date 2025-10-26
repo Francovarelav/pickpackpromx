@@ -314,36 +314,51 @@ ${JSON.stringify(productList, null, 2)}
   const updateMissingProducts = async (detectedProducts: any[]) => {
     try {
       console.log('🔄 Calculando productos missing basado en detección de Gemini...');
+      console.log('📊 Productos detectados por Gemini:', detectedProducts);
       
       if (!cart) return;
+      
+      console.log('📦 Productos del cart:', cart.productos.map(p => ({ 
+        producto: p.producto, 
+        product_id: p.product_id, 
+        cantidad_default: p.cantidad_default 
+      })));
       
       const missingProducts: string[] = [];
       
       // Para cada producto del cart, verificar si fue detectado por Gemini
       cart.productos.forEach(cartProduct => {
+        console.log(`\n🔍 Procesando: ${cartProduct.producto} (ID: ${cartProduct.product_id}, Default: ${cartProduct.cantidad_default})`);
+        
         const detectedProduct = detectedProducts.find(detected => 
           detected.product_id === cartProduct.product_id
         );
         
         if (!detectedProduct) {
           // Producto no detectado por Gemini - va completo a missing
-          missingProducts.push(`${cartProduct.producto} (${cartProduct.marca}) - ${cartProduct.cantidad_default} unidades`);
-          console.log(`❌ Producto no detectado: ${cartProduct.producto}`);
+          const missingEntry = `${cartProduct.producto} (${cartProduct.marca}) - ${cartProduct.cantidad_default} unidades`;
+          missingProducts.push(missingEntry);
+          console.log(`❌ NO detectado: ${missingEntry}`);
         } else {
           // Producto detectado - calcular diferencia
           const cantidadDetectada = detectedProduct.quantity_mentioned || 0;
           const cantidadDefault = cartProduct.cantidad_default;
           
+          console.log(`✅ Detectado: ${cantidadDetectada} unidades de ${cantidadDefault} requeridas`);
+          
           if (cantidadDetectada < cantidadDefault) {
             // Faltan unidades - agregar la diferencia a missing
             const cantidadFaltante = cantidadDefault - cantidadDetectada;
-            missingProducts.push(`${cartProduct.producto} (${cartProduct.marca}) - ${cantidadFaltante} unidades faltantes`);
-            console.log(`⚠️ Producto parcialmente detectado: ${cartProduct.producto} - Faltan ${cantidadFaltante} unidades`);
+            const missingEntry = `${cartProduct.producto} (${cartProduct.marca}) - ${cantidadFaltante} unidades faltantes`;
+            missingProducts.push(missingEntry);
+            console.log(`⚠️ Faltan unidades: ${missingEntry}`);
           } else {
-            console.log(`✅ Producto completamente detectado: ${cartProduct.producto}`);
+            console.log(`✅ Completamente cubierto: ${cartProduct.producto}`);
           }
         }
       });
+      
+      console.log(`\n📋 Lista final de missing:`, missingProducts);
       
       // Actualizar el cart en Firebase
       const cartRef = doc(db, 'carts', cart.id);
@@ -359,7 +374,7 @@ ${JSON.stringify(productList, null, 2)}
         updated_at: new Date()
       } : null);
       
-      console.log('✅ Productos missing calculados:', missingProducts);
+      console.log('✅ Productos missing actualizados en Firebase y estado local');
       
     } catch (error) {
       console.error('❌ Error actualizando missing products:', error);
