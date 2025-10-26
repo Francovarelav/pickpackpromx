@@ -12,8 +12,7 @@
     "upload-cart": "node scripts/upload-default-cart.mjs",
     "add-bottles-to-carts": "node scripts/add-bottles-to-carts.mjs",
     "deploy-rules": "node scripts/deploy-firestore-rules.mjs",
-    "process-bottles": "node scripts/process-alcohol-bottles.mjs"
-    "deploy-rules": "node scripts/deploy-firestore-rules.mjs",
+    "process-bottles": "node scripts/process-alcohol-bottles.mjs",
     "upload-warehouse": "node scripts/upload-warehouse-to-firebase.mjs"
   },
   "dependencies": {

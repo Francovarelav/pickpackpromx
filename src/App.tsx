@@ -9,8 +9,6 @@ import Airlines from './pages/Airlines'
 import Employees from './pages/Employees'
 import OrderTrackingPage from './pages/OrderTrackingPage'
 import OrderDetailPage from './pages/OrderDetailPage'
-import { NavigationProvider, useNavigation } from './contexts/NavigationContext'
-import type { Order } from '@/types/order-types'
 import AlcoholBottles from './pages/AlcoholBottles'
 import { NavigationProvider, useNavigation } from './contexts/NavigationContext'
 

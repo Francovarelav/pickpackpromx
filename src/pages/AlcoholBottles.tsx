@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { db } from '../../firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -65,6 +65,19 @@ export default function AlcoholBottles() {
   // Historial de botellas encontradas
   const [foundBottles, setFoundBottles] = useState<DetectedBottle[]>([]);
   
+  // Estado para pares de botellas que pueden juntarse
+  interface BottlePair {
+    id: string;
+    bottle1: DetectedBottle;
+    bottle2: DetectedBottle;
+    combinedPercentage: number;
+    combinedML: number;
+    productId: string;
+    productName: string;
+    timestamp: string;
+  }
+  const [bottlePairs, setBottlePairs] = useState<BottlePair[]>([]);
+  
   // Estadísticas del día
   const [stats, setStats] = useState({
     procesadas: 0,
@@ -77,6 +90,87 @@ export default function AlcoholBottles() {
   useEffect(() => {
     loadBottleCatalog();
   }, []);
+
+  // Detectar automáticamente pares de botellas que pueden juntarse
+  useEffect(() => {
+    detectBottlePairs();
+  }, [foundBottles]);
+
+  const detectBottlePairs = () => {
+    // Filtrar solo botellas que tienen porcentaje calculado y están en el rango de completar
+    const eligibleBottles = foundBottles.filter(bottle => 
+      bottle.matchedProduct &&
+      bottle.porcentajeLiquido !== undefined &&
+      bottle.porcentajeLiquido >= BOTTLE_RULES.MIN_COMPLETION_THRESHOLD &&
+      bottle.porcentajeLiquido <= BOTTLE_RULES.MAX_COMPLETION_THRESHOLD
+    );
+
+    // Agrupar por producto (mismo ID de producto)
+    const bottlesByProduct: { [key: string]: DetectedBottle[] } = {};
+    
+    eligibleBottles.forEach(bottle => {
+      if (bottle.matchedProduct) {
+        const productId = bottle.matchedProduct.id;
+        if (!bottlesByProduct[productId]) {
+          bottlesByProduct[productId] = [];
+        }
+        bottlesByProduct[productId].push(bottle);
+      }
+    });
+
+    // Encontrar pares de botellas del mismo producto
+    const newPairs: BottlePair[] = [];
+    
+    Object.entries(bottlesByProduct).forEach(([productId, bottles]) => {
+      // Si hay al menos 2 botellas del mismo producto
+      if (bottles.length >= 2) {
+        // Crear pares de botellas
+        for (let i = 0; i < bottles.length - 1; i++) {
+          for (let j = i + 1; j < bottles.length; j++) {
+            const bottle1 = bottles[i];
+            const bottle2 = bottles[j];
+            
+            if (bottle1.porcentajeLiquido !== undefined && 
+                bottle2.porcentajeLiquido !== undefined &&
+                bottle1.mlRestantes !== undefined &&
+                bottle2.mlRestantes !== undefined) {
+              
+              const combinedPercentage = bottle1.porcentajeLiquido + bottle2.porcentajeLiquido;
+              const combinedML = bottle1.mlRestantes + bottle2.mlRestantes;
+              
+              // Verificar que la suma sea mayor a 50% (según reglas de negocio)
+              if (combinedPercentage >= BOTTLE_RULES.REUSE_THRESHOLD) {
+                const pairId = `${productId}-${Date.now()}-${i}-${j}`;
+                
+                newPairs.push({
+                  id: pairId,
+                  bottle1,
+                  bottle2,
+                  combinedPercentage,
+                  combinedML,
+                  productId,
+                  productName: bottle1.matchedProduct?.nombre || 'Producto Desconocido',
+                  timestamp: new Date().toISOString()
+                });
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Solo actualizar si hay cambios
+    if (newPairs.length > 0 || bottlePairs.length > 0) {
+      setBottlePairs(newPairs);
+      
+      if (newPairs.length > 0) {
+        console.log(`🔄 Detectados ${newPairs.length} par(es) de botellas que pueden juntarse:`);
+        newPairs.forEach(pair => {
+          console.log(`   ✓ ${pair.productName}: ${pair.bottle1.porcentajeLiquido}% + ${pair.bottle2.porcentajeLiquido}% = ${pair.combinedPercentage}% (${pair.combinedML}ml)`);
+        });
+      }
+    }
+  };
 
   const loadBottleCatalog = async () => {
     try {
@@ -673,6 +767,115 @@ Responde SOLO con el JSON.`;
     }
   };
 
+  // Función para juntar dos botellas
+  const mergeBottles = async (pair: BottlePair) => {
+    try {
+      console.log(`🔄 Juntando botellas: ${pair.productName}`);
+      console.log(`   Botella 1: ${pair.bottle1.porcentajeLiquido}% (${pair.bottle1.mlRestantes}ml)`);
+      console.log(`   Botella 2: ${pair.bottle2.porcentajeLiquido}% (${pair.bottle2.mlRestantes}ml)`);
+      console.log(`   Total: ${pair.combinedPercentage}% (${pair.combinedML}ml)`);
+
+      if (!pair.bottle1.matchedProduct || !pair.bottle2.matchedProduct) {
+        console.error('❌ No se pueden juntar botellas sin producto identificado');
+        return;
+      }
+
+      const bottlesRef = collection(db, 'alcohol_bottles');
+      
+      // Crear una nueva botella "completada" con el líquido combinado
+      const mergedBottleData = {
+        // Copiar información del producto base
+        type_id: pair.bottle1.matchedProduct.type_id || pair.bottle1.matchedProduct.id,
+        nombre: pair.bottle1.matchedProduct.nombre,
+        marca: pair.bottle1.matchedProduct.marca,
+        tipo: pair.bottle1.matchedProduct.tipo,
+        volumen_ml: pair.bottle1.matchedProduct.volumen_ml,
+        precio_unitario: pair.bottle1.matchedProduct.precio_unitario,
+        contenido_alcohol_porcentaje: pair.bottle1.matchedProduct.contenido_alcohol_porcentaje,
+        
+        // Información de peso (usar los estándares del producto)
+        peso_botella_vacia_gramos: pair.bottle1.matchedProduct.peso_botella_vacia_gramos,
+        peso_botella_llena_gramos: pair.bottle1.matchedProduct.peso_botella_llena_gramos,
+        densidad_liquido_g_ml: pair.bottle1.matchedProduct.densidad_liquido_g_ml,
+        
+        // Nivel actual basado en el porcentaje combinado
+        nivel_actual: Math.min(100, pair.combinedPercentage), // No exceder 100%
+        estado: 'disponible', // La botella completada está disponible para usar
+        puede_completarse: false, // Ya está completada
+        botella_complementaria_id: null,
+        vuelo_asignado: null,
+        
+        // Metadata
+        fecha_registro: new Date().toISOString(),
+        fecha_ultima_actualizacion: new Date().toISOString(),
+        numero_vuelos_usados: 0,
+        
+        // Información adicional sobre el merge
+        es_botella_completada: true,
+        ml_reales_restantes: pair.combinedML,
+        botella_origen_1: {
+          peso_detectado: pair.bottle1.pesoDetectado,
+          porcentaje: pair.bottle1.porcentajeLiquido,
+          ml: pair.bottle1.mlRestantes
+        },
+        botella_origen_2: {
+          peso_detectado: pair.bottle2.pesoDetectado,
+          porcentaje: pair.bottle2.porcentajeLiquido,
+          ml: pair.bottle2.mlRestantes
+        },
+        fecha_merge: new Date().toISOString(),
+        
+        // Datos originales
+        datos_originales: pair.bottle1.matchedProduct.datos_originales
+      };
+
+      // Agregar la botella completada a Firebase
+      const docRef = await addDoc(bottlesRef, mergedBottleData);
+      
+      console.log(`✅ Botella completada creada con ID: ${docRef.id}`);
+      console.log(`   Nivel final: ${mergedBottleData.nivel_actual}%`);
+      console.log(`   ML totales: ${pair.combinedML}ml`);
+
+      // Actualizar estadísticas
+      setStats(prev => ({
+        ...prev,
+        procesadas: prev.procesadas + 2,
+        completadas: prev.completadas + 1
+      }));
+
+      // Remover el par de la lista
+      setBottlePairs(prev => prev.filter(p => p.id !== pair.id));
+
+      // Actualizar la botella 1 con los valores combinados y remover solo la botella 2
+      setFoundBottles(prev => {
+        return prev.map(bottle => {
+          // Si es la botella 1, actualizarla con los valores combinados
+          if (bottle === pair.bottle1) {
+            return {
+              ...bottle,
+              porcentajeLiquido: Math.min(100, pair.combinedPercentage),
+              mlRestantes: pair.combinedML,
+              // Agregar indicador visual de que está completada
+              label: `${bottle.label} (COMPLETADA)`,
+              confidence: 100, // Alta confianza porque ya fue procesada
+            };
+          }
+          // Remover la botella 2
+          if (bottle === pair.bottle2) {
+            return null;
+          }
+          // Mantener el resto de botellas
+          return bottle;
+        }).filter(Boolean) as DetectedBottle[];
+      });
+
+      console.log('✅ Botellas juntadas exitosamente - Botella 1 actualizada, Botella 2 removida');
+
+    } catch (error) {
+      console.error('❌ Error al juntar botellas:', error);
+    }
+  };
+
   // Cleanup al desmontar
   useEffect(() => {
     return () => {
@@ -1062,6 +1265,195 @@ Responde SOLO con el JSON.`;
                     </CardContent>
                   </Card>
                 </div>
+
+                {/* Sección de Pares de Botellas para Juntar */}
+                {bottlePairs.length > 0 && (
+                  <div className="space-y-4">
+                    <Card className="border-orange-300 bg-orange-50">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-orange-500 rounded-full p-3">
+                              <Wine className="h-6 w-6 text-white" />
+                            </div>
+                            <div>
+                              <CardTitle className="text-2xl text-orange-900">
+                                🔄 Botellas Detectadas para Juntar
+                              </CardTitle>
+                              <CardDescription className="text-orange-700">
+                                {bottlePairs.length} par{bottlePairs.length !== 1 ? 'es' : ''} de botellas del mismo modelo pueden juntarse
+                              </CardDescription>
+                            </div>
+                          </div>
+                          <Badge className="bg-orange-600 text-white text-lg px-4 py-2">
+                            {bottlePairs.length} Par{bottlePairs.length !== 1 ? 'es' : ''}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          {bottlePairs.map((pair) => (
+                            <Card key={pair.id} className="border-2 border-orange-300 overflow-hidden">
+                              <CardContent className="p-6">
+                                {/* Encabezado del par */}
+                                <div className="flex items-center justify-between mb-4 pb-4 border-b-2 border-orange-200">
+                                  <div>
+                                    <h3 className="text-xl font-bold text-orange-900 mb-1">
+                                      {pair.productName}
+                                    </h3>
+                                    <p className="text-sm text-orange-700">
+                                      {pair.bottle1.matchedProduct?.marca} • {pair.bottle1.matchedProduct?.volumen_ml}ml
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <Badge className="bg-green-600 text-lg px-3 py-1 mb-1">
+                                      {pair.combinedPercentage}% Total
+                                    </Badge>
+                                    <p className="text-xs text-gray-600">
+                                      {pair.combinedML}ml combinados
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {/* Grid de las dos botellas */}
+                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                  {/* Botella 1 */}
+                                  <div className="bg-blue-50 rounded-lg p-4 border-2 border-blue-300">
+                                    <div className="flex items-center gap-2 mb-3">
+                                      <Wine className="h-5 w-5 text-blue-600" />
+                                      <span className="font-bold text-blue-900">Botella 1</span>
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-xs text-blue-700">Nivel:</span>
+                                        <Badge className="bg-blue-600">
+                                          {pair.bottle1.porcentajeLiquido}%
+                                        </Badge>
+                                      </div>
+                                      
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-xs text-blue-700">ML:</span>
+                                        <span className="text-sm font-bold text-blue-900">
+                                          {pair.bottle1.mlRestantes}ml
+                                        </span>
+                                      </div>
+                                      
+                                      {pair.bottle1.pesoDetectado && (
+                                        <div className="flex justify-between items-center">
+                                          <span className="text-xs text-blue-700">Peso:</span>
+                                          <span className="text-sm font-medium text-blue-900">
+                                            {pair.bottle1.pesoDetectado}g
+                                          </span>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Barra de progreso */}
+                                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                                        <div 
+                                          className="bg-blue-500 h-full rounded-full"
+                                          style={{ width: `${pair.bottle1.porcentajeLiquido}%` }}
+                                        ></div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Botella 2 */}
+                                  <div className="bg-purple-50 rounded-lg p-4 border-2 border-purple-300">
+                                    <div className="flex items-center gap-2 mb-3">
+                                      <Wine className="h-5 w-5 text-purple-600" />
+                                      <span className="font-bold text-purple-900">Botella 2</span>
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-xs text-purple-700">Nivel:</span>
+                                        <Badge className="bg-purple-600">
+                                          {pair.bottle2.porcentajeLiquido}%
+                                        </Badge>
+                                      </div>
+                                      
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-xs text-purple-700">ML:</span>
+                                        <span className="text-sm font-bold text-purple-900">
+                                          {pair.bottle2.mlRestantes}ml
+                                        </span>
+                                      </div>
+                                      
+                                      {pair.bottle2.pesoDetectado && (
+                                        <div className="flex justify-between items-center">
+                                          <span className="text-xs text-purple-700">Peso:</span>
+                                          <span className="text-sm font-medium text-purple-900">
+                                            {pair.bottle2.pesoDetectado}g
+                                          </span>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Barra de progreso */}
+                                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                                        <div 
+                                          className="bg-purple-500 h-full rounded-full"
+                                          style={{ width: `${pair.bottle2.porcentajeLiquido}%` }}
+                                        ></div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Resultado de la combinación */}
+                                <div className="bg-gradient-to-r from-green-100 to-green-200 rounded-lg p-4 border-2 border-green-400 mb-4">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                      <CheckCircle2 className="h-5 w-5 text-green-700" />
+                                      <span className="font-bold text-green-900">
+                                        Resultado al Juntar:
+                                      </span>
+                                    </div>
+                                    <Badge className="bg-green-600 text-white">
+                                      ✓ Válido ({pair.combinedPercentage}% ≥ 50%)
+                                    </Badge>
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-2 gap-4 mt-3">
+                                    <div className="text-center">
+                                      <p className="text-xs text-green-700 mb-1">Porcentaje Total</p>
+                                      <p className="text-3xl font-bold text-green-900">
+                                        {pair.combinedPercentage}%
+                                      </p>
+                                    </div>
+                                    <div className="text-center">
+                                      <p className="text-xs text-green-700 mb-1">ML Totales</p>
+                                      <p className="text-3xl font-bold text-green-900">
+                                        {pair.combinedML}ml
+                                      </p>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Barra de progreso combinada */}
+                                  <div className="w-full bg-gray-300 rounded-full h-3 mt-3 overflow-hidden">
+                                    <div 
+                                      className="bg-gradient-to-r from-green-500 to-green-600 h-full rounded-full transition-all"
+                                      style={{ width: `${Math.min(100, pair.combinedPercentage)}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
+
+                                {/* Botón de acción */}
+                                <Button 
+                                  className="w-full bg-orange-600 hover:bg-orange-700 text-white text-lg py-6"
+                                  onClick={() => mergeBottles(pair)}
+                                >
+                                  <CheckCircle2 className="mr-2 h-5 w-5" />
+                                  Juntar estas 2 Botellas
+                                </Button>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
 
                 {/* Sección de Botellas Encontradas */}
                 {foundBottles.length > 0 && (

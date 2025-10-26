@@ -200,6 +200,28 @@ export default function CartDetailsPage({ cartId, onBack }: CartDetailsPageProps
       recognitionInstance.onerror = (event: any) => {
         console.error('❌ Error en reconocimiento:', event.error);
         setIsRecording(false);
+        
+        // Mostrar mensaje específico según el tipo de error
+        let errorMessage = 'Error en el reconocimiento de voz';
+        
+        switch(event.error) {
+          case 'network':
+            errorMessage = 'Error de conexión: El reconocimiento de voz requiere conexión a internet. Por favor verifica tu conexión y vuelve a intentar.';
+            break;
+          case 'not-allowed':
+            errorMessage = 'Permiso denegado: Por favor permite el acceso al micrófono en tu navegador.';
+            break;
+          case 'no-speech':
+            errorMessage = 'No se detectó audio: Por favor habla más fuerte o verifica tu micrófono.';
+            break;
+          case 'audio-capture':
+            errorMessage = 'No se puede acceder al micrófono: Verifica que tu micrófono esté conectado y funcionando.';
+            break;
+          default:
+            errorMessage = `Error desconocido: ${event.error}`;
+        }
+        
+        alert(errorMessage);
       };
 
       recognitionInstance.onend = () => {

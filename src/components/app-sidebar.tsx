@@ -20,6 +20,8 @@ import {
   IconChartLine,
   IconUserCheck,
   IconBottle,
+  IconBuildingStore,
+  IconPlane,
 } from "@tabler/icons-react"
 
 import { NavDocuments } from "@/components/nav-documents"
