@@ -22,6 +22,7 @@ import {
   SidebarProvider,
 } from '@/components/ui/sidebar';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
   Dialog,
@@ -82,7 +83,7 @@ export default function CartDetailsPage({ cartId, onBack }: CartDetailsPageProps
   // Estados para manejo de productos unknown
   const [unknownProducts, setUnknownProducts] = useState<string[]>([]);
   const [showUnknownDialog, setShowUnknownDialog] = useState(false);
-  const [selectedUnknownProduct, setSelectedUnknownProduct] = useState<string>('');
+  const [selectedCartProduct, setSelectedCartProduct] = useState<CartProduct | null>(null);
   const [unknownQuantity, setUnknownQuantity] = useState<number>(1);
 
   // Cargar cart desde Firebase
@@ -407,14 +408,14 @@ ${JSON.stringify(productList, null, 2)}
   // Función para agregar producto unknown a missing
   const addUnknownToMissing = async () => {
     try {
-      if (!cart || !selectedUnknownProduct) return;
+      if (!cart || !selectedCartProduct) return;
       
       const productToAdd: MissingProduct = {
         cantidad_missing: unknownQuantity,
-        marca: 'Unknown',
-        presentacion: 'N/A',
-        product_id: `unknown-${Date.now()}`,
-        producto: selectedUnknownProduct,
+        marca: selectedCartProduct.marca,
+        presentacion: selectedCartProduct.presentacion,
+        product_id: selectedCartProduct.product_id,
+        producto: selectedCartProduct.producto,
         stock_found: 0
       };
       
@@ -435,7 +436,7 @@ ${JSON.stringify(productList, null, 2)}
       } : null);
       
       // Limpiar formulario
-      setSelectedUnknownProduct('');
+      setSelectedCartProduct(null);
       setUnknownQuantity(1);
       
       console.log('✅ Producto unknown agregado:', productToAdd);
@@ -647,45 +648,55 @@ ${JSON.stringify(productList, null, 2)}
                 {unknownProducts.map((product, index) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <span className="text-yellow-800 font-medium">{product}</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedUnknownProduct(product);
-                        setUnknownQuantity(1);
-                      }}
-                    >
-                      Seleccionar
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Select onValueChange={(value) => {
+                        const cartProduct = cart?.productos.find(p => p.product_id === value);
+                        if (cartProduct) {
+                          setSelectedCartProduct(cartProduct);
+                          setUnknownQuantity(1);
+                        }
+                      }}>
+                        <SelectTrigger className="w-48">
+                          <SelectValue placeholder="Seleccionar producto" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {cart?.productos.map((cartProduct) => (
+                            <SelectItem key={cartProduct.product_id} value={cartProduct.product_id}>
+                              {cartProduct.producto} ({cartProduct.marca})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
             
             {/* Formulario para agregar producto */}
-            {selectedUnknownProduct && (
+            {selectedCartProduct && (
               <div className="border-t pt-4">
                 <Label className="text-sm font-medium">Agregar a faltantes:</Label>
                 <div className="mt-2 space-y-4">
-                  <div>
-                    <Label htmlFor="product-name">Producto:</Label>
-                    <Input
-                      id="product-name"
-                      value={selectedUnknownProduct}
-                      onChange={(e) => setSelectedUnknownProduct(e.target.value)}
-                      placeholder="Nombre del producto"
-                    />
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="text-sm text-blue-800">
+                      <div className="font-semibold">Producto seleccionado:</div>
+                      <div>{selectedCartProduct.producto} ({selectedCartProduct.marca})</div>
+                      <div className="text-xs text-blue-600">
+                        {selectedCartProduct.presentacion} | Cantidad por defecto: {selectedCartProduct.cantidad_default}
+                      </div>
+                    </div>
                   </div>
                   
                   <div>
-                    <Label htmlFor="quantity">Cantidad:</Label>
+                    <Label htmlFor="quantity">Cantidad faltante:</Label>
                     <Input
                       id="quantity"
                       type="number"
                       min="1"
                       value={unknownQuantity}
                       onChange={(e) => setUnknownQuantity(parseInt(e.target.value) || 1)}
-                      placeholder="Cantidad"
+                      placeholder="Cantidad faltante"
                     />
                   </div>
                   
@@ -693,10 +704,10 @@ ${JSON.stringify(productList, null, 2)}
                     <Button onClick={addUnknownToMissing}>
                       Agregar a Faltantes
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       onClick={() => {
-                        setSelectedUnknownProduct('');
+                        setSelectedCartProduct(null);
                         setUnknownQuantity(1);
                       }}
                     >
@@ -714,7 +725,7 @@ ${JSON.stringify(productList, null, 2)}
                 onClick={() => {
                   setShowUnknownDialog(false);
                   setUnknownProducts([]);
-                  setSelectedUnknownProduct('');
+                  setSelectedCartProduct(null);
                 }}
               >
                 Cerrar
@@ -723,7 +734,7 @@ ${JSON.stringify(productList, null, 2)}
                 onClick={() => {
                   setShowUnknownDialog(false);
                   setUnknownProducts([]);
-                  setSelectedUnknownProduct('');
+                  setSelectedCartProduct(null);
                   // Reiniciar grabación
                   setTimeout(() => {
                     startRecording();
