@@ -20,10 +20,11 @@ export interface FirebaseProductData {
   restock_quantity: number;
   leadtime_days: number;
   supplier_id: string;
+  precio_unitario?: number;
+  peso_kg?: number; // Peso del producto en kg
+  categoria?: 'bebidas' | 'snacks' | 'cafe' | 'alcohol';
   created_at: Date;
   updated_at: Date;
-  stock_actual?: number;
-  precio_unitario?: number;
 }
 
 export interface SupplierRawData {
