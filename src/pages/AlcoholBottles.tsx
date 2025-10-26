@@ -4,7 +4,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Camera, CameraOff, Wine, BarChart3, AlertCircle, Zap, CheckCircle2, Trash2 } from 'lucide-react';
+import { Camera, CameraOff, Wine, AlertCircle, Zap, CheckCircle2, Trash2 } from 'lucide-react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SiteHeader } from '@/components/site-header';
 import {
@@ -65,8 +65,12 @@ export default function AlcoholBottles() {
   // Historial de botellas encontradas
   const [foundBottles, setFoundBottles] = useState<DetectedBottle[]>([]);
   
+  // Estados para diálogo de botella
+  const [, setSelectedBottle] = useState<DetectedBottle | null>(null);
+  const [, setIsBottleDialogOpen] = useState(false);
+  
   // Estadísticas del día
-  const [stats, setStats] = useState({
+  const [stats] = useState({
     procesadas: 0,
     reutilizadas: 0,
     completadas: 0,
@@ -688,7 +692,7 @@ Responde SOLO con el JSON.`;
           "--header-height": "calc(var(--spacing) * 12)",
         } as React.CSSProperties}
       >
-        <AppSidebar variant="inset" />
+        <AppSidebar />
         <SidebarInset>
           <SiteHeader />
           <div className="flex flex-1 flex-col">
@@ -711,7 +715,7 @@ Responde SOLO con el JSON.`;
         "--header-height": "calc(var(--spacing) * 12)",
       } as React.CSSProperties}
     >
-      <AppSidebar variant="inset" />
+      <AppSidebar />
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">

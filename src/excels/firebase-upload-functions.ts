@@ -204,7 +204,6 @@ export async function uploadProductsToFirestore(
         supplier_id: supplierId,
         created_at: Timestamp.now().toDate(),
         updated_at: Timestamp.now().toDate(),
-        stock_actual: 0,
         precio_unitario: 0
       };
       

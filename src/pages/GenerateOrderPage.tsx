@@ -27,7 +27,7 @@ interface GenerateOrderPageProps {
   onNavigate: (page: 'dashboard' | 'generate-order' | 'order-tracking' | 'order-detail', order?: any) => void
 }
 
-export default function GenerateOrderPage({ onNavigate }: GenerateOrderPageProps) {
+export default function GenerateOrderPage({}: GenerateOrderPageProps) {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [isDragOver, setIsDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -215,7 +215,7 @@ export default function GenerateOrderPage({ onNavigate }: GenerateOrderPageProps
           } as React.CSSProperties
         }
       >
-        <AppSidebar variant="inset" />
+        <AppSidebar />
         <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">

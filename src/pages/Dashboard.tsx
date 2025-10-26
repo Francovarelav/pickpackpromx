@@ -15,7 +15,7 @@ interface DashboardProps {
   onNavigate?: (page: 'dashboard' | 'generate-order' | 'order-tracking' | 'order-detail', order?: any) => void
 }
 
-export default function Page({ onNavigate }: DashboardProps = {}) {
+export default function Page({}: DashboardProps = {}) {
   return (
     <SidebarProvider
       style={
@@ -25,7 +25,7 @@ export default function Page({ onNavigate }: DashboardProps = {}) {
         } as React.CSSProperties
       }
     >
-      <AppSidebar variant="inset" />
+      <AppSidebar />
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">

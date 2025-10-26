@@ -3,7 +3,7 @@
  * Utiliza los datos reales de stock y ubicación
  */
 
-import { shelfStockData, type ShelfStockRawData } from '@/warehouse/shelf-stock-data'
+import { shelfStockData } from '@/warehouse/shelf-stock-data'
 import type { OrderItem } from '@/types/order-types'
 
 export interface ProductShelfLocation {
@@ -31,8 +31,6 @@ export function findProductShelfLocation(
   marca: string, 
   presentacion: string
 ): ProductShelfLocation[] {
-  const locations: ProductShelfLocation[] = []
-  
   // Buscar coincidencias exactas primero
   const exactMatches = shelfStockData.filter(stock => 
     stock.producto.toLowerCase() === producto.toLowerCase() &&

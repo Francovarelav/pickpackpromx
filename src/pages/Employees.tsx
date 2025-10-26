@@ -163,7 +163,7 @@ export default function Employees() {
           } as React.CSSProperties
         }
       >
-        <AppSidebar variant="inset" />
+        <AppSidebar />
         <SidebarInset>
           <SiteHeader />
           <div className="flex flex-1 flex-col">
@@ -189,7 +189,7 @@ export default function Employees() {
         } as React.CSSProperties
       }
     >
-      <AppSidebar variant="inset" />
+      <AppSidebar />
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">

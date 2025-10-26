@@ -5,7 +5,7 @@ import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { 
@@ -15,7 +15,6 @@ import {
   IconPackage, 
   IconAlertCircle,
   IconSearch,
-  IconFilter,
   IconRefresh,
   IconEye,
   IconDownload
@@ -138,7 +137,7 @@ export default function OrderTrackingPage({ onNavigate }: OrderTrackingPageProps
           } as React.CSSProperties
         }
       >
-        <AppSidebar variant="inset" onNavigate={onNavigate} />
+        <AppSidebar onNavigate={(page: string) => onNavigate(page as any)} />
         <SidebarInset>
           <SiteHeader />
           <div className="flex flex-1 flex-col">

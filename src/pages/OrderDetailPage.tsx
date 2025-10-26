@@ -20,12 +20,12 @@ import {
   IconAlertTriangle,
   IconInfoCircle
 } from "@tabler/icons-react"
-import type { Order, OrderItem } from '@/types/order-types'
+import type { Order } from '@/types/order-types'
 import { 
   enrichOrderItemsWithShelfLocations, 
   getAvailabilitySummary,
   getUniqueShelvesForOrder,
-  getStockStatsByZone,
+  // getStockStatsByZone, // Comentado porque no se usa
   type ProductWithShelfLocation 
 } from '@/services/shelf-location-service'
 
@@ -42,7 +42,7 @@ export default function OrderDetailPage({ order, onNavigate }: OrderDetailPagePr
   const [products, setProducts] = useState<ProductWithPicking[]>([])
   const [availabilitySummary, setAvailabilitySummary] = useState<any>(null)
   const [uniqueShelves, setUniqueShelves] = useState<string[]>([])
-  const [zoneStats, setZoneStats] = useState<any>({})
+  // const [zoneStats] = useState<any>({}) // Comentado porque no se usa
 
   // Initialize products with real shelf locations when order changes
   useEffect(() => {
@@ -58,11 +58,10 @@ export default function OrderDetailPage({ order, onNavigate }: OrderDetailPagePr
       // Get additional data for the modal
       const summary = getAvailabilitySummary(enrichedProducts)
       const shelves = getUniqueShelvesForOrder(enrichedProducts)
-      const stats = getStockStatsByZone(enrichedProducts)
+      // const stats = getStockStatsByZone(enrichedProducts) // Comentado porque no se usa
       
       setAvailabilitySummary(summary)
       setUniqueShelves(shelves)
-      setZoneStats(stats)
     }
   }, [order])
 
@@ -76,7 +75,7 @@ export default function OrderDetailPage({ order, onNavigate }: OrderDetailPagePr
           } as React.CSSProperties
         }
       >
-        <AppSidebar variant="inset" onNavigate={onNavigate} />
+        <AppSidebar onNavigate={(page: string) => onNavigate(page as any)} />
         <SidebarInset>
           <SiteHeader />
           <div className="flex flex-1 flex-col">
@@ -123,7 +122,7 @@ export default function OrderDetailPage({ order, onNavigate }: OrderDetailPagePr
         } as React.CSSProperties
       }
     >
-      <AppSidebar variant="inset" onNavigate={onNavigate} />
+      <AppSidebar onNavigate={(page: string) => onNavigate(page as any)} />
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">
@@ -250,7 +249,7 @@ export default function OrderDetailPage({ order, onNavigate }: OrderDetailPagePr
 
                         {/* Products List */}
                         <div className="flex-1 space-y-2 overflow-y-auto min-h-0">
-                          {products.map((product, index) => (
+                          {products.map((product) => (
                             <div 
                               key={product.product_id}
                               className={`p-3 border rounded-lg transition-colors ${
