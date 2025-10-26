@@ -6,6 +6,8 @@ import PicknPackPage from './pages/PicknPackPage'
 import MapPage from './pages/MapPage'
 import CartMapPage from './pages/CartMapPage'
 import GenerateOrderPage from './pages/GenerateOrderPage'
+import Airlines from './pages/Airlines'
+import Employees from './pages/Employees'
 import OrderTrackingPage from './pages/OrderTrackingPage'
 import OrderDetailPage from './pages/OrderDetailPage'
 import AlcoholBottles from './pages/AlcoholBottles'
@@ -35,6 +37,8 @@ function AppContent() {
         return <OrderTrackingPage onNavigate={() => {}} />
       case 'order-detail':
         return <OrderDetailPage order={null} onNavigate={() => {}} />
+      case 'alcohol-bottles':
+        return <AlcoholBottles />
       case 'alcohol-bottles':
         return <AlcoholBottles />
       default:
