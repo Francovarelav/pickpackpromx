@@ -86,6 +86,12 @@ export default function CartDetailsPage({ cartId, onBack }: CartDetailsPageProps
   const [selectedCartProduct, setSelectedCartProduct] = useState<CartProduct | null>(null);
   const [unknownQuantity, setUnknownQuantity] = useState<number>(1);
 
+  // Estados para correcciones finales
+  const [isCorrectionRecording, setIsCorrectionRecording] = useState(false);
+  const [isCorrectionProcessing, setIsCorrectionProcessing] = useState(false);
+  const [correctionRecognition, setCorrectionRecognition] = useState<any>(null);
+  const [correctionTranscript, setCorrectionTranscript] = useState('');
+
   // Cargar cart desde Firebase
   useEffect(() => {
     const loadCart = async () => {
@@ -250,6 +256,85 @@ export default function CartDetailsPage({ cartId, onBack }: CartDetailsPageProps
     }
   };
 
+  // Funciones para correcciones finales
+  const startCorrectionRecording = async () => {
+    try {
+      console.log('🎤 Iniciando grabación de correcciones...');
+      
+      // Verificar si el navegador soporta Web Speech API
+      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        throw new Error('Este navegador no soporta reconocimiento de voz');
+      }
+
+      // Limpiar estados de corrección
+      setCorrectionTranscript('');
+      setIsCorrectionProcessing(false);
+      setIsCorrectionRecording(true);
+
+      // Crear instancia de reconocimiento de voz
+      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+      const recognitionInstance = new SpeechRecognition();
+      recognitionInstance.lang = 'es-ES';
+      recognitionInstance.continuous = true;
+      recognitionInstance.interimResults = false;
+
+      recognitionInstance.onstart = () => {
+        console.log('✅ Reconocimiento de correcciones iniciado');
+      };
+
+      recognitionInstance.onresult = async (event: any) => {
+        console.log('📝 Resultado de corrección recibido');
+        
+        let fullTranscript = '';
+        for (let i = 0; i < event.results.length; i++) {
+          fullTranscript += event.results[i][0].transcript + ' ';
+        }
+        fullTranscript = fullTranscript.trim();
+        
+        console.log('📝 Transcript de corrección:', fullTranscript);
+        setCorrectionTranscript(fullTranscript);
+        
+        if (!isCorrectionRecording) {
+          console.log('🤖 Procesando corrección con Gemini...');
+          setIsCorrectionProcessing(true);
+          await processCorrectionWithGemini(fullTranscript);
+        }
+      };
+
+      recognitionInstance.onerror = (event: any) => {
+        console.error('❌ Error en reconocimiento de corrección:', event.error);
+        setIsCorrectionRecording(false);
+      };
+
+      recognitionInstance.onend = () => {
+        console.log('🏁 Reconocimiento de corrección terminado');
+        setIsCorrectionRecording(false);
+        
+        if (correctionTranscript && correctionTranscript.trim().length > 0) {
+          console.log('🤖 Procesando corrección con Gemini desde onend...');
+          setIsCorrectionProcessing(true);
+          processCorrectionWithGemini(correctionTranscript);
+        } else {
+          console.log('⚠️ No hay transcript de corrección en onend');
+        }
+      };
+
+      recognitionInstance.start();
+      setCorrectionRecognition(recognitionInstance);
+
+    } catch (error) {
+      console.error('❌ Error iniciando reconocimiento de corrección:', error);
+      setIsCorrectionRecording(false);
+    }
+  };
+
+  const stopCorrectionRecording = async () => {
+    if (correctionRecognition && isCorrectionRecording) {
+      console.log('🛑 Deteniendo reconocimiento de corrección...');
+      correctionRecognition.stop();
+    }
+  };
+
   const processWithGemini = async (transcriptText: string) => {
     try {
       console.log('🤖 Procesando con Gemini...');
@@ -333,6 +418,95 @@ ${JSON.stringify(productList, null, 2)}
       console.error('❌ Error con Gemini:', error);
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const processCorrectionWithGemini = async (transcriptText: string) => {
+    try {
+      console.log('🤖 Procesando correcciones con Gemini...');
+      
+      const genAI = new GoogleGenerativeAI('AIzaSyAYv2vcqi_KiLwL811RzLqTNaRpvWoRsqg');
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+      // Preparar lista de productos del cart
+      const productList = cart?.productos.map(producto => ({
+        product_brand: producto.marca,
+        product_id: producto.product_id,
+        product_name: producto.producto,
+        product_presentation: producto.presentacion,
+        unit_price: producto.precio_unitario
+      })) || [];
+
+      // Preparar missing products actuales
+      const currentMissing = cart?.missing || [];
+
+      const prompt = `Eres un asistente especializado en corrección de inventarios minoristas. Tu tarea es procesar correcciones de voz del usuario y ajustar la lista de productos faltantes.
+
+**INSTRUCCIONES:**
+1. Analiza el TRANSCRIPT_DE_CORRECCION del usuario
+2. Compara con la LISTA_DE_PRODUCTOS_DISPONIBLES y MISSING_PRODUCTS_ACTUALES
+3. Aplica las correcciones mencionadas por el usuario
+4. Devuelve el JSON actualizado de missing products
+
+**TIPOS DE CORRECCIONES QUE PUEDES PROCESAR:**
+- "No encontré X productos, sino Y" → Ajustar cantidad faltante
+- "Faltó que encontrara X productos" → Agregar a missing
+- "También van a faltar X productos" → Agregar nuevos a missing
+- "Ya no faltan X productos" → Remover de missing
+- "Cambiar X por Y" → Reemplazar productos
+
+**FORMATO DE SALIDA:**
+Devuelve ÚNICAMENTE un objeto JSON con el array "missing" actualizado:
+
+\`\`\`json
+{
+  "missing": [
+    {
+      "cantidad_missing": 5,
+      "marca": "Coca-Cola",
+      "presentacion": "355 ml",
+      "product_id": "coca-cola-normal-355-ml",
+      "producto": "Coca-Cola Normal",
+      "stock_found": 0
+    }
+  ]
+}
+\`\`\`
+
+**LISTA_DE_PRODUCTOS_DISPONIBLES:**
+${JSON.stringify(productList, null, 2)}
+
+**MISSING_PRODUCTS_ACTUALES:**
+${JSON.stringify(currentMissing, null, 2)}
+
+**TRANSCRIPT_DE_CORRECCION:**
+"${transcriptText}"
+
+**PROPORCIONA ÚNICAMENTE LA RESPUESTA EN FORMATO JSON, SIN NINGÚN TEXTO ADICIONAL ANTES O DESPUÉS.**`;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      let cleanText = response.text().trim();
+
+      // Limpiar markdown si está presente
+      if (cleanText.startsWith('```json')) {
+        cleanText = cleanText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+      } else if (cleanText.startsWith('```')) {
+        cleanText = cleanText.replace(/```\n?/g, '');
+      }
+
+      const jsonResult = JSON.parse(cleanText);
+      console.log('✅ Corrección procesada:', jsonResult);
+
+      // Actualizar missing products con la corrección
+      if (jsonResult.missing) {
+        await updateMissingProductsFromCorrection(jsonResult.missing);
+      }
+      
+    } catch (error) {
+      console.error('❌ Error procesando corrección con Gemini:', error);
+    } finally {
+      setIsCorrectionProcessing(false);
     }
   };
 
@@ -431,6 +605,35 @@ ${JSON.stringify(productList, null, 2)}
       
     } catch (error) {
       console.error('❌ Error actualizando missing products:', error);
+    }
+  };
+
+  // Función para actualizar missing products desde corrección
+  const updateMissingProductsFromCorrection = async (correctedMissing: MissingProduct[]) => {
+    try {
+      console.log('🔄 Actualizando missing products desde corrección...');
+      console.log('📊 Missing products corregidos:', correctedMissing);
+      
+      if (!cart) return;
+      
+      // Actualizar el cart en Firebase
+      const cartRef = doc(db, 'carts', cart.id);
+      await updateDoc(cartRef, {
+        missing: correctedMissing,
+        updated_at: new Date()
+      });
+      
+      // Actualizar el estado local
+      setCart(prev => prev ? {
+        ...prev,
+        missing: correctedMissing,
+        updated_at: new Date()
+      } : null);
+      
+      console.log('✅ Missing products actualizados desde corrección');
+      
+    } catch (error) {
+      console.error('❌ Error actualizando missing products desde corrección:', error);
     }
   };
 
@@ -654,6 +857,47 @@ ${JSON.stringify(productList, null, 2)}
             </CardContent>
           </Card>
 
+          {/* Botón de Correcciones Finales */}
+          {cart.missing.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Correcciones Finales</CardTitle>
+                <CardDescription>
+                  Graba correcciones para ajustar los productos faltantes
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-center">
+                  <Button
+                    onClick={isCorrectionRecording ? stopCorrectionRecording : startCorrectionRecording}
+                    className={`text-lg px-8 py-4 h-auto ${
+                      isCorrectionRecording
+                        ? 'bg-red-600 hover:bg-red-700 text-white'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    }`}
+                    disabled={isCorrectionProcessing}
+                    size="lg"
+                  >
+                    {isCorrectionProcessing ? (
+                      <Loader2 className="w-6 h-6 mr-3 animate-spin" />
+                    ) : isCorrectionRecording ? (
+                      <MicOff className="w-6 h-6 mr-3" />
+                    ) : (
+                      <Mic className="w-6 h-6 mr-3" />
+                    )}
+                    {isCorrectionProcessing ? 'Procesando Corrección...' : isCorrectionRecording ? 'Detener Corrección' : 'Iniciar Corrección'}
+                  </Button>
+                </div>
+                {correctionTranscript && (
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      <strong>Corrección grabada:</strong> {correctionTranscript}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
         </div>
       </SidebarInset>
