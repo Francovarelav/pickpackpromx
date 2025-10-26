@@ -7,7 +7,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { 
   ArrowLeft, 
   Package,
-  Layers,
   Navigation,
   CheckCircle,
   Loader2
@@ -18,13 +17,6 @@ import {
   SidebarInset,
   SidebarProvider,
 } from '@/components/ui/sidebar';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 
 interface MissingProduct {
   cantidad_missing: number;
@@ -74,7 +66,6 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
   const [completedProducts, setCompletedProducts] = useState<string[]>([]);
   const [optimalPath, setOptimalPath] = useState<any>(null);
   const [isCalculating, setIsCalculating] = useState(false);
-  const [show3DDialog, setShow3DDialog] = useState(false);
 
   // Cargar cart y productos desde Firebase
   useEffect(() => {
@@ -579,13 +570,6 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
                         {optimalPath ? `${optimalPath.totalDistance} pasos • ${optimalPath.totalProducts} productos` : 'Calculando ruta...'}
                       </CardDescription>
                     </div>
-                    <Button
-                      onClick={() => setShow3DDialog(true)}
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      <Layers className="h-4 w-4 mr-2" />
-                      Ver Mapa 3D
-                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -649,25 +633,6 @@ export default function CartMapPage({ cartId, onBack }: CartMapPageProps) {
           </div>
         </div>
       </SidebarInset>
-
-      {/* Dialog para Mapa 3D (placeholder) */}
-      <Dialog open={show3DDialog} onOpenChange={setShow3DDialog}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Mapa 3D del Almacén</DialogTitle>
-            <DialogDescription>
-              Vista tridimensional del almacén (próximamente)
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex items-center justify-center h-96 bg-slate-100 rounded-lg">
-            <div className="text-center">
-              <Layers className="w-16 h-16 mx-auto mb-4 text-slate-400" />
-              <p className="text-lg font-semibold text-slate-600">Mapa 3D</p>
-              <p className="text-sm text-slate-500">Funcionalidad en desarrollo</p>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </SidebarProvider>
   );
 }
