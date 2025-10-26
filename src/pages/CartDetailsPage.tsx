@@ -42,13 +42,22 @@ interface CartProduct {
   stock_actual: number;
 }
 
+interface MissingProduct {
+  cantidad_missing: number;
+  marca: string;
+  presentacion: string;
+  product_id: string;
+  producto: string;
+  stock_found: number;
+}
+
 interface Cart {
   id: string;
   nombre: string;
   descripcion: string;
   productos: CartProduct[];
   total_productos: number;
-  missing: string[];
+  missing: MissingProduct[];
   tipo: string;
   activo: boolean;
   created_at: any;
@@ -324,7 +333,7 @@ ${JSON.stringify(productList, null, 2)}
         cantidad_default: p.cantidad_default 
       })));
       
-      const missingProducts: string[] = [];
+      const missingProducts: MissingProduct[] = [];
       
       // Para cada producto del cart, verificar si fue detectado por Gemini
       cart.productos.forEach(cartProduct => {
@@ -336,9 +345,16 @@ ${JSON.stringify(productList, null, 2)}
         
         if (!detectedProduct) {
           // Producto no detectado por Gemini - va completo a missing
-          const missingEntry = `${cartProduct.producto} (${cartProduct.marca}) - ${cartProduct.cantidad_default} unidades`;
+          const missingEntry = {
+            cantidad_missing: cartProduct.cantidad_default,
+            marca: cartProduct.marca,
+            presentacion: cartProduct.presentacion,
+            product_id: cartProduct.product_id,
+            producto: cartProduct.producto,
+            stock_found: 0
+          };
           missingProducts.push(missingEntry);
-          console.log(`❌ NO detectado: ${missingEntry}`);
+          console.log(`❌ NO detectado: ${cartProduct.producto} - ${cartProduct.cantidad_default} unidades faltantes`);
         } else {
           // Producto detectado - calcular diferencia
           const cantidadDetectada = detectedProduct.quantity_mentioned || 0;
@@ -349,9 +365,16 @@ ${JSON.stringify(productList, null, 2)}
           if (cantidadDetectada < cantidadDefault) {
             // Faltan unidades - agregar la diferencia a missing
             const cantidadFaltante = cantidadDefault - cantidadDetectada;
-            const missingEntry = `${cartProduct.producto} (${cartProduct.marca}) - ${cantidadFaltante} unidades faltantes`;
+            const missingEntry = {
+              cantidad_missing: cantidadFaltante,
+              marca: cartProduct.marca,
+              presentacion: cartProduct.presentacion,
+              product_id: cartProduct.product_id,
+              producto: cartProduct.producto,
+              stock_found: cantidadDetectada
+            };
             missingProducts.push(missingEntry);
-            console.log(`⚠️ Faltan unidades: ${missingEntry}`);
+            console.log(`⚠️ Faltan unidades: ${cartProduct.producto} - ${cantidadFaltante} unidades faltantes`);
           } else {
             console.log(`✅ Completamente cubierto: ${cartProduct.producto}`);
           }
@@ -386,7 +409,14 @@ ${JSON.stringify(productList, null, 2)}
     try {
       if (!cart || !selectedUnknownProduct) return;
       
-      const productToAdd = `${selectedUnknownProduct} - ${unknownQuantity} unidades`;
+      const productToAdd: MissingProduct = {
+        cantidad_missing: unknownQuantity,
+        marca: 'Unknown',
+        presentacion: 'N/A',
+        product_id: `unknown-${Date.now()}`,
+        producto: selectedUnknownProduct,
+        stock_found: 0
+      };
       
       // Actualizar Firebase
       const cartRef = doc(db, 'carts', cart.id);
@@ -576,7 +606,16 @@ ${JSON.stringify(productList, null, 2)}
                     <div key={index} className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg">
                       <div className="flex items-center gap-2">
                         <AlertCircle className="h-4 w-4 text-red-500" />
-                        <span className="text-red-800 font-medium">{missing}</span>
+                        <div className="text-red-800 font-medium">
+                          <div className="font-semibold">{missing.producto}</div>
+                          <div className="text-sm text-red-600">
+                            {missing.marca} - {missing.presentacion}
+                          </div>
+                          <div className="text-sm">
+                            Faltan: {missing.cantidad_missing} unidades | 
+                            Encontradas: {missing.stock_found} unidades
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))}
