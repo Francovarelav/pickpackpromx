@@ -18,6 +18,7 @@ export function NavMain({
     url: string
     icon?: Icon
     onClick?: () => void
+    external?: boolean
   }[]
 }) {
   const { setCurrentPage } = useNavigation()
@@ -51,19 +52,21 @@ export function NavMain({
                 onClick={() => {
                   if (item.onClick) {
                     item.onClick()
+                  } else if (item.external) {
+                    window.open(item.url, '_blank', 'noopener,noreferrer')
                   } else if (item.url !== '#') {
                     setCurrentPage(item.url)
                   }
                 }}
-                asChild={!item.onClick && item.url === '#'}
+                asChild={!item.onClick && item.url === '#' && !item.external}
               >
-                {item.onClick || item.url !== '#' ? (
+                {item.onClick || (item.url !== '#' && !item.external) ? (
                   <>
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>
                   </>
                 ) : (
-                  <a href={item.url}>
+                  <a href={item.url} target={item.external ? '_blank' : undefined} rel={item.external ? 'noopener noreferrer' : undefined}>
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>
                   </a>

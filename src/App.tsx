@@ -5,7 +5,7 @@ import Providers from './pages/Providers'
 import PicknPackPage from './pages/PicknPackPage'
 import MapPage from './pages/MapPage'
 import CartMapPage from './pages/CartMapPage'
-import GenerateOrderPage from './pages/GenerateOrderPage'
+import Render3DPage from './pages/Render3DPage'
 import OrderTrackingPage from './pages/OrderTrackingPage'
 import OrderDetailPage from './pages/OrderDetailPage'
 import AlcoholBottles from './pages/AlcoholBottles'
@@ -29,8 +29,8 @@ function AppContent() {
           cartId={navigationParams.cartId || ''} 
           onBack={() => setCurrentPage('map')} 
         />
-      case 'generate-order':
-        return <GenerateOrderPage onNavigate={() => {}} />
+      case 'render-3d':
+        return <Render3DPage />
       case 'order-tracking':
         return <OrderTrackingPage onNavigate={() => {}} />
       case 'order-detail':

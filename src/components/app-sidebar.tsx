@@ -1,6 +1,5 @@
 import {
   IconDashboard,
-  IconFileDescription,
   IconListDetails,
   IconPackage,
   IconTruck,
@@ -8,6 +7,7 @@ import {
   IconBottle,
   IconInnerShadowTop,
   IconSettings,
+  IconCube,
 } from "@tabler/icons-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -60,9 +60,10 @@ export function AppSidebar({ onNavigate, ...props }: AppSidebarProps) {
         icon: IconMap,
       },
       {
-        title: "Generate Order",
-        url: "generate-order",
-        icon: IconFileDescription,
+        title: "Ver Render 3D",
+        url: "https://francovarela.8thwall.app/rutaoptimaone/",
+        icon: IconCube,
+        external: true,
       },
       {
         title: "Alcohol Bottles",
